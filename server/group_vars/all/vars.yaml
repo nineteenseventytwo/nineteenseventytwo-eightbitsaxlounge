@@ -27,8 +27,14 @@ hosts_1972:
     mac:
       eth0: "2c:cf:67:40:d7:a1"
 
+# VLAN 20, not the pre-rebuild flat LAN — kept in sync with the play-local
+# override in init-pc.yaml. This is what templates/ansiblehosts.j2 actually
+# renders into the generated inventory's ansible_host for midi-host, so it
+# is the value that governs where Ansible connects, distinct from
+# init-pc.yaml's own vars: block which only governs that file's own
+# in-play {{ midi_host.ip }} template expressions.
 midi_host:
-  ip: "192.168.68.50"
+  ip: "192.168.20.210"
   user: "mchel"
 
 # Set for flannel

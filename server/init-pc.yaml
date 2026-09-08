@@ -5,10 +5,24 @@
   vars:
     deploy_base: "C:\\Services\\Midi"
     ssh_key_name: "pi-to-midi-host"
-    dotnet_version: "9.0"
+    # ASP.NET Core, not the base runtime — midi/*.MinimalApi.csproj uses
+    # Sdk="Microsoft.NET.Sdk.Web" and is framework-dependent (no
+    # SelfContained), so it needs Microsoft.AspNetCore.App at run time. The
+    # base-runtime check below used to look for Microsoft.NETCore.App, which
+    # would have passed even on a machine that could not actually host this
+    # app.
+    dotnet_version: "10.0"
     midi_host:
       user: mchel
-      ip: 192.168.68.50
+      # VLAN 20, not the pre-rebuild flat LAN. Kept in sync with the same
+      # value in group_vars/all/vars.yaml's own midi_host — this play's
+      # local vars take precedence for the {{ midi_host.ip }} template
+      # expressions inside this file (the wait_for and SSH-test tasks
+      # below), while the *inventory* connection itself resolves through
+      # group_vars via templates/ansiblehosts.j2, so both need to agree or
+      # this play tests connectivity to a different address than the one it
+      # actually connected on.
+      ip: 192.168.20.210
     nssm_version: "2.24"
     nssm_url: "https://nssm.cc/release/nssm-{{ nssm_version }}.zip"
 
@@ -110,9 +124,9 @@
         state: directory
 
     # ========== .NET Runtime Installation ==========
-    - name: Check if .NET {{ dotnet_version }} runtime is installed
+    - name: Check if ASP.NET Core {{ dotnet_version }} runtime is installed
       ansible.windows.win_shell: |
-        dotnet --list-runtimes | Select-String "Microsoft.NETCore.App {{ dotnet_version }}"
+        dotnet --list-runtimes | Select-String "Microsoft.AspNetCore.App {{ dotnet_version }}"
       register: dotnet_check
       failed_when: false
       changed_when: false
@@ -122,14 +136,21 @@
         path: "C:\\Temp"
         state: directory
 
-    - name: Download .NET {{ dotnet_version }} installer (if needed)
+    - name: Download ASP.NET Core {{ dotnet_version }} runtime installer (if needed)
+      # aka.ms's channel redirect, not a hand-built download.visualstudio.microsoft.com
+      # URL — that pattern needs an internal build id in place of the plain
+      # version string and 400s on any version tried against it (verified
+      # 2026-09-08 against the URL this file used to construct). This one
+      # resolves to whatever the latest patch in the {{ dotnet_version }}
+      # channel actually is, so it does not go stale the way a pinned patch
+      # version would.
       ansible.windows.win_get_url:
-        url: "https://download.visualstudio.microsoft.com/download/pr/{{ dotnet_version }}/dotnet-runtime-{{ dotnet_version }}-win-x64.exe"
+        url: "https://aka.ms/dotnet/{{ dotnet_version }}/aspnetcore-runtime-win-x64.exe"
         dest: "C:\\Temp\\dotnet-runtime-installer.exe"
       when: dotnet_check.rc != 0
       register: dotnet_download
 
-    - name: Install .NET {{ dotnet_version }} runtime
+    - name: Install ASP.NET Core {{ dotnet_version }} runtime
       ansible.windows.win_package:
         path: "C:\\Temp\\dotnet-runtime-installer.exe"
         arguments: "/quiet /norestart"
@@ -181,6 +202,12 @@
         scope: machine
 
     # ========== Firewall Rules ==========
+    # VLAN 20, not the old flat-LAN /22. This is very likely the actual
+    # cause of "the Windows side has been failing silently" — even with the
+    # PC's own address corrected above, a rule scoped to the old subnet
+    # denies every request the cluster (192.168.20.0/24) sends, and Windows
+    # Firewall drops rather than rejects, so the symptom looks identical to
+    # the service simply not running.
     - name: Allow MIDI API dev port (5000)
       community.windows.win_firewall_rule:
         name: "MIDI API Dev"
@@ -190,7 +217,7 @@
         protocol: tcp
         state: present
         enabled: true
-        remoteip: 192.168.68.0/22
+        remoteip: 192.168.20.0/24
 
     - name: Allow MIDI API prod port (5001)
       community.windows.win_firewall_rule:
@@ -201,7 +228,7 @@
         protocol: tcp
         state: present
         enabled: true
-        remoteip: 192.168.68.0/22
+        remoteip: 192.168.20.0/24
 
     # ========== Summary ==========
     - name: Print setup summary
