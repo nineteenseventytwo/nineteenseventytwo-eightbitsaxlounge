@@ -41,6 +41,9 @@ on:
         description: 'JSON object of component-specific secrets to pass as environment variables'
         required: false
 
+permissions:
+  contents: read
+
 jobs:
   publish:
     name: Build, Test & Publish

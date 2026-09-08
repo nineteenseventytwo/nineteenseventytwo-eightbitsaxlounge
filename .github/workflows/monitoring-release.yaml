@@ -9,6 +9,9 @@ on:
     paths:
       - 'monitoring/version.txt'
 
+permissions:
+  contents: read
+
 jobs:
   deploy:
     name: Deploy Monitoring Stack

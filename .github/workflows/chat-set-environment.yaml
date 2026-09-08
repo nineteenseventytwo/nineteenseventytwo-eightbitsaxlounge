@@ -12,6 +12,9 @@ on:
           - prod
         default: 'dev'
 
+permissions:
+  contents: read
+
 jobs:
   switch-environment:
     name: Switch Active Chat Environment

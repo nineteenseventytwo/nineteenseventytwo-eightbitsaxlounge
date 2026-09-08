@@ -1,0 +1,51 @@
+---
+# What this repo is actually responsible for.
+#
+# ADR-0012 (platform repo) splits this repository's two jobs: it builds
+# images, and the platform repo owns every Kubernetes manifest that runs in
+# the cluster. So Checkov here scans what stays — Dockerfiles and workflows —
+# and does not scan the manifests under */k8s/ and server/, which are
+# transitional: they move to apps/eightbitsaxlounge/ and policy/tenants/ in
+# the platform repo, get rewritten there with PSS labels, security contexts,
+# non-default namespaces and quotas they have never had, and are scanned by
+# that repo's own lint.yml. Gating this repo on ~120 findings in files whose
+# migration is the entire point would block every PR on work that deletes
+# them.
+#
+# Remove these skip-paths when server/ and */k8s/ are gone. There should be
+# nothing left for them to match.
+skip-path:
+  - ".*/k8s/.*"
+  - "^server/.*"
+
+framework:
+  - kubernetes
+  - dockerfile
+  - github_actions
+
+skip-check:
+  # HEALTHCHECK in the image. Superseded here: every one of the six workloads
+  # defines livenessProbe and readinessProbe in its Deployment/StatefulSet
+  # (verified 2026-09-08), and in Kubernetes it is the kubelet's probes that
+  # act on the result, not Docker's healthcheck.
+  - CKV_DOCKER_2
+
+  # workflow_dispatch inputs must be empty. The same judgement the platform
+  # repo records inline on deploy-cluster.yml: the inputs here select an
+  # environment or a version for a fixed, committed playbook — they do not
+  # choose what runs or where it comes from. The real boundary is the
+  # `environment:` gate, not the absence of inputs.
+  - CKV_GHA_7
+
+  # ---- Temporary. Both are real, both need an image rebuild and a runtime
+  # check, and both are the subject of the next PR (migration plan F6 and the
+  # PSS-restricted blocker found by this workflow's first run). Not skipped
+  # because they are wrong — skipped because fixing them blind is how you
+  # discover at 2am that a container cannot write to its own cache directory.
+  #
+  # CKV_DOCKER_3: data, db, overlay and state run as root. The prod tenant
+  # namespace enforces Pod Security Standards `restricted`, which requires
+  # runAsNonRoot — so these four will fail admission on migration.
+  - CKV_DOCKER_3
+  # CKV_DOCKER_7: alpine:latest, couchdb:latest, natsio/nats-box:latest.
+  - CKV_DOCKER_7

@@ -3,6 +3,9 @@ name: Server Shutdown
 on:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   shutdown:
     name: Shutdown Kubernetes Cluster
