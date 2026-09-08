@@ -1,4 +1,16 @@
 # Changelog
+## [2.0.4] - 2026-09-08
+
+### Changed
+- Non-root: `USER couchdb` — the base image's own entrypoint drops
+  privileges via `setpriv` only when it detects `id -u = 0`; started
+  non-root it skips that step and execs directly. Verified end to end:
+  single-node setup, `_users`/`_replicator`/`_global_changes` created,
+  `_up` answers ok.
+- Pinned `couchdb:latest` to `couchdb:3.5` plus a digest, so the image this
+  Dockerfile produces is reproducible rather than whatever `latest`
+  resolves to on build day.
+
 ## [2.0.3] - 2026-02-12
 
 ### Changed
