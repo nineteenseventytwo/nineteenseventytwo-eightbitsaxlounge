@@ -82,19 +82,17 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - name: Checkov (IaC, Dockerfiles, workflows)
-        uses: bridgecrewio/checkov-action@v12
-        with:
-          # Scope, skips and their reasons live in .checkov.yaml so they are
-          # reviewable next to each other rather than spread across flags.
-          # Everything — directory, frameworks, skip-paths and skip-checks
-          # with their reasons — lives in .checkov.yaml. Passing `directory`
-          # as an action input as well overrides the config file's scope and
-          # silently discards its skip-paths, which is how the first attempt
-          # at this kept reporting the manifests it was told to ignore.
-          config_file: .checkov.yaml
-          quiet: true
-          soft_fail: false
+      # Run directly rather than through bridgecrewio/checkov-action. The
+      # action has a `config_file` input but no `skip_path` one, and it
+      # constructs its own `--directory` argument which overrides the config
+      # file's scope and discards its skip-paths with it — the run then
+      # reports exactly the manifests it was told to ignore, with no error
+      # to explain why. Invoking the CLI means one file decides what is
+      # scanned, and the version is pinned the same way ruff is.
+      - name: Checkov (Dockerfiles, workflows)
+        run: |
+          pip install checkov==3.3.16
+          checkov --config-file .checkov.yaml --compact
 
       - name: Trivy filesystem scan (vulnerabilities and secrets)
         uses: aquasecurity/trivy-action@v0.36.0

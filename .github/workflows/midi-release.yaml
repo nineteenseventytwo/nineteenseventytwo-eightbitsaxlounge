@@ -315,15 +315,20 @@ jobs:
 
     - name: Download artifact from GitHub Release (if using existing version)
       if: needs.check-artifacts.outputs.needs-build-pc == 'false'
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        REPO: ${{ github.repository }}
+        VERSION: ${{ needs.check-artifacts.outputs.version }}
       run: |
         mkdir -p artifacts
-        curl -L -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+        curl -L -H "Authorization: token $GH_TOKEN" \
           -H "Accept: application/octet-stream" \
-          "https://api.github.com/repos/${{ github.repository }}/releases/tags/midi-api-v${{ needs.check-artifacts.outputs.version }}" \
-          | jq -r '.assets[] | select(.name == "midi-api-${{ needs.check-artifacts.outputs.version }}.tar.gz") | .url' \
-          | xargs -I {} curl -L -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+          "https://api.github.com/repos/$REPO/releases/tags/midi-api-v$VERSION" \
+          | jq -r --arg name "midi-api-$VERSION.tar.gz" \
+              '.assets[] | select(.name == $name) | .url' \
+          | xargs -I {} curl -L -H "Authorization: token $GH_TOKEN" \
           -H "Accept: application/octet-stream" {} \
-          -o artifacts/midi-api-${{ needs.check-artifacts.outputs.version }}.tar.gz
+          -o "artifacts/midi-api-$VERSION.tar.gz"
 
     - name: Deploy MIDI PC
       working-directory: ./midi

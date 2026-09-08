@@ -17,9 +17,13 @@
 directory:
   - "."
 
+# Matched with a leading slash, and checkov does not treat these as fully
+# anchored regexes — ".*/k8s/.*" parses but matches nothing, which is how an
+# earlier attempt reported the very manifests it was told to skip. Verified
+# against the CLI: these two forms take kubernetes findings to zero.
 skip-path:
-  - ".*/k8s/.*"
-  - "^server/.*"
+  - "/k8s/"
+  - "/server/"
 
 framework:
   - kubernetes
