@@ -17,7 +17,20 @@ permissions:
 jobs:
   release:
     name: Release Overlay Component
+    # contents: read is required here, not just at the workflow's own
+    # top-level permissions block above — a reusable-workflow call's own
+    # top-level `permissions:` (release-template.yaml's is `contents:
+    # read`) cannot exceed what THIS job grants, and job-level permissions
+    # fully replace the workflow-level default for that job rather than
+    # extending it. Without it: instant `startup_failure`, zero jobs
+    # created, GitHub's only diagnostic being the generic "This run likely
+    # failed because of a workflow file issue." Confirmed live 2026-09-08
+    # with an isolated minimal reproduction — this omission is what broke
+    # every *-release.yaml the moment the repo moved into an organization;
+    # personal-account repos evidently did not enforce this ceiling as
+    # strictly.
     permissions:
+      contents: read
       packages: write
       security-events: write
     uses: ./.github/workflows/release-template.yaml
