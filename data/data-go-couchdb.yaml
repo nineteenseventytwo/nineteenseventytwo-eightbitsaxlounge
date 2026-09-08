@@ -23,7 +23,7 @@
       ansible.builtin.copy:
         src: k8s/service.yaml
         dest: "{{ tempdir.path }}/service.yaml"
-    
+
     - name: Determine Ingress Controller external IP (MetalLB)
       ansible.builtin.shell: |
         kubectl -n ingress-nginx get svc ingress-nginx-controller -o jsonpath='{.status.loadBalancer.ingress[0].ip}'

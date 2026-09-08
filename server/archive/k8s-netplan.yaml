@@ -11,7 +11,7 @@
         owner: root
         group: root
         mode: '0755'
-      
+
     - name: Install 50-cloud-init.yaml
       template:
         src: 50-cloud-init.yaml.j2

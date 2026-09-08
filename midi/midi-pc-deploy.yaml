@@ -83,7 +83,7 @@
         $nssm = "C:\Tools\nssm\nssm.exe"
         $service = "{{ service_name }}"
         $exe = "{{ target_dir }}\current\NineteenSeventyTwo.EightBitSaxLounge.Midi.MinimalApi.exe"
-        
+
         # Build environment variables array
         $envVars = @(
           "ASPNETCORE_URLS=http://0.0.0.0:{{ service_port }}"
@@ -99,10 +99,10 @@
           "Authentication__Clients__1__ClientSecret={{ lookup('env', 'AUTHENTICATION__CLIENTS__1__CLIENTSECRET') }}"
           "MidiDeviceService__BypassKey={{ lookup('env', 'MIDIDEVICESERVICE__BYPASSKEY') }}"
         )
-        
+
         # Check if service exists
         $exists = & $nssm status $service 2>$null
-        
+
         if ($LASTEXITCODE -ne 0) {
           # Install new service
           & $nssm install $service $exe | Out-Null
@@ -112,20 +112,20 @@
           & $nssm set $service Start SERVICE_AUTO_START | Out-Null
           & $nssm set $service AppStdout "{{ deploy_base }}\logs\{{ service_name }}-stdout.log" | Out-Null
           & $nssm set $service AppStderr "{{ deploy_base }}\logs\{{ service_name }}-stderr.log" | Out-Null
-          
+
           # Set environment variables
           & $nssm set $service AppEnvironmentExtra ($envVars -join "`r`n") | Out-Null
-          
+
           Write-Output "Service installed successfully"
         } else {
           # Update existing service
           & $nssm set $service Application $exe | Out-Null
           & $nssm set $service AppDirectory "{{ target_dir }}\current" | Out-Null
-          
+
           # Reset and set environment variables
           & $nssm reset $service AppEnvironmentExtra | Out-Null
           & $nssm set $service AppEnvironmentExtra ($envVars -join "`r`n") | Out-Null
-          
+
           Write-Output "Service updated successfully"
         }
       register: nssm_result

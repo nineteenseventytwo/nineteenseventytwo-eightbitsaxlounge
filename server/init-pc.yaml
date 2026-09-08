@@ -63,7 +63,7 @@
         icacls C:\ProgramData\ssh\administrators_authorized_keys /grant "BUILTIN\Administrators:(F)"
         icacls C:\ProgramData\ssh\administrators_authorized_keys /grant "SYSTEM:(F)"
       when: is_admin.rc == 0
-  
+
     - name: Restart SSH service to apply authorized_keys changes
       ansible.windows.win_service:
         name: sshd

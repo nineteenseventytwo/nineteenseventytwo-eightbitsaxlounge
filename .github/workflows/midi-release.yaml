@@ -51,16 +51,16 @@ jobs:
         run: |
           VERSION="${{ steps.version.outputs.version }}"
           echo "Checking for MIDI container version: $VERSION"
-          
+
           # Use GitHub Packages API to check if the version exists
           # This is more reliable than the Docker registry API
           RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" \
             -H "Authorization: Bearer $GITHUB_TOKEN" \
             -H "Accept: application/vnd.github+json" \
             "https://api.github.com/users/${{ github.repository_owner }}/packages/container/eightbitsaxlounge-midi/versions")
-          
+
           echo "API Response Code: $RESPONSE"
-          
+
           if [ "$RESPONSE" = "200" ]; then
             # Get the list of versions and check if our version exists
             VERSION_EXISTS=$(curl -s \
@@ -68,9 +68,9 @@ jobs:
               -H "Accept: application/vnd.github+json" \
               "https://api.github.com/users/${{ github.repository_owner }}/packages/container/eightbitsaxlounge-midi/versions" \
               | jq -r --arg ver "$VERSION" '.[] | .metadata.container.tags[] | select(. == $ver)' | head -n 1)
-            
+
             echo "Found matching tag: '$VERSION_EXISTS'"
-            
+
             if [ -n "$VERSION_EXISTS" ]; then
               echo "needs-build=false" >> $GITHUB_OUTPUT
               echo "✓ Container image exists - will skip build and tests"
@@ -93,7 +93,7 @@ jobs:
           RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" \
             -H "Authorization: Bearer $GITHUB_TOKEN" \
             "https://api.github.com/repos/${{ github.repository }}/releases/tags/$TAG")
-          
+
           if [ "$RESPONSE" = "200" ]; then
             echo "needs-build=false" >> $GITHUB_OUTPUT
             echo "✓ GitHub Release exists - will skip build"
@@ -247,7 +247,7 @@ jobs:
         files: midi/publish/midi-api-${{ needs.check-artifacts.outputs.version }}.tar.gz
         body: |
           ## MIDI API Release v${{ needs.check-artifacts.outputs.version }}
-          
+
           **Production deployment**
           - Self-contained Windows x64 binary
           - Deployed to: C:\Services\Midi\prod

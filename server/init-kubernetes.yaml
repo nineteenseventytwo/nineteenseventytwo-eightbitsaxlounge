@@ -11,7 +11,7 @@
     - name: Download and dearmor Kubernetes GPG key
       ansible.builtin.shell:
         cmd: >
-          curl -fsSL https://pkgs.k8s.io/core:/stable:/v{{kubernetes_version}}/deb/Release.key | 
+          curl -fsSL https://pkgs.k8s.io/core:/stable:/v{{kubernetes_version}}/deb/Release.key |
           gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
         creates: /etc/apt/keyrings/kubernetes-apt-keyring.gpg
 
@@ -20,7 +20,7 @@
         repo: "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v{{ kubernetes_version }}/deb/ /"
         filename: kubernetes
         state: present
-    
+
     - name: Update and upgrade all packages
       ansible.builtin.apt:
         upgrade: yes
@@ -50,15 +50,15 @@
       register: kubeadm_init_check
       changed_when: false
       tags: reset_kubeadm
-      
+
     - name: Reset Kubernetes Master
       shell: kubeadm reset -f
       become: true
       when: "'kubeadm init was run' in kubeadm_init_check.stdout"
       tags: reset_kubeadm
-      
+
     - name: Initialize Kubernetes Master
-      shell: | 
+      shell: |
           kubeadm init \
           --pod-network-cidr {{kubernetes_pod_network_cidr}} \
           --apiserver-advertise-address {{ (hosts_1972 | selectattr('name', 'equalto', '1972-master-1') | first).ip.eth0 }} \
@@ -67,14 +67,14 @@
       register: kubeadm_init_output
       changed_when: "'kubeadm join' in kubeadm_init_output.stdout"
       tags: init_kubeadm
-    
+
     - name: Save join command
       ansible.builtin.copy:
         dest: /root/kubeadm_join_command.sh
         content: "#!/bin/bash\n{{ kubeadm_init_output.stdout_lines[-2:] | join('\n') }}"
         mode: '0700'
       become: true
-    
+
     - name: Fetch join command
       ansible.builtin.fetch:
         src: /root/kubeadm_join_command.sh
@@ -130,4 +130,3 @@
 
     - name: Join nodes to Kubernetes cluster
       ansible.builtin.shell: /home/mchellmer/kubeadm_join_command.sh
-      

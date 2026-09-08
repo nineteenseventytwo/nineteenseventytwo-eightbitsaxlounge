@@ -12,7 +12,7 @@
       ansible.builtin.command:
         cmd: /usr/bin/pip3 install kubernetes --break-system-packages
       become: true
-  
+
     - name: Apply NGINX Ingress Controller
       kubernetes.core.k8s:
         state: present

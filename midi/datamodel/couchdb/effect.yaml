@@ -8,14 +8,14 @@ echoverb:
 - Name: EchoVerb
   Description: text
 
-# an effect may have device specific settings 
+# an effect may have device specific settings
 # e.g. the Ventris Dual Reverb has controls for pre-delay feedback and delay/reverb crossfade to apply to echoverb
   DeviceSettings:
     - Name: Control1
       DeviceName: VentrisDualReverb
-      EffectName: PreDelayFeedback 
+      EffectName: PreDelayFeedback
       DeviceMidiImplementationName: EngineParam1-5 or engine agnostic i.e. this.EffectName
-     
+
     - Name: Control2
       DeviceName: VentrisDualReverb
       EffectName: DelayReverbCrossfade
