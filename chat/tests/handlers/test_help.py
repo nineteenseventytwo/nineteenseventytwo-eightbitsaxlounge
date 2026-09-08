@@ -43,13 +43,13 @@ class TestHelpHandler:
     @pytest.mark.asyncio
     async def test_valid_topic_lofi(self, help_handler, mock_publisher, mock_twitch_context):
         """!help lofi publishes overlay.popup with value 'lofi'."""
-        response = await help_handler.handle(['lofi'], mock_twitch_context)
+        await help_handler.handle(['lofi'], mock_twitch_context)
         mock_publisher.publish.assert_awaited_once_with('overlay.popup', 'lofi')
 
     @pytest.mark.asyncio
     async def test_topic_matching_is_case_insensitive(self, help_handler, mock_publisher, mock_twitch_context):
         """Topic lookup is case-insensitive."""
-        response = await help_handler.handle(['ENGINE'], mock_twitch_context)
+        await help_handler.handle(['ENGINE'], mock_twitch_context)
         mock_publisher.publish.assert_awaited_once_with('overlay.popup', 'engine')
 
     @pytest.mark.asyncio

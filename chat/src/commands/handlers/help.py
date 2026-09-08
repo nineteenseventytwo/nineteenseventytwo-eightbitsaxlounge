@@ -1,7 +1,7 @@
 """Help command handler — triggers overlay help screens or topic popups via NATS."""
 
 import logging
-from typing import Any, Optional
+from typing import Any
 
 from commands.handlers.command_handler import CommandHandler
 

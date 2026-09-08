@@ -1,0 +1,24 @@
+# Committed so the lint result does not change when ruff does.
+#
+# Before this file existed there was no config at all, so `ruff check` used
+# whatever the installed ruff's defaults were on the day — 10 findings under
+# the bug-oriented rules below, 98 under ruff 0.16.6's wider default set. A
+# required status check on a moving rule set goes red on a PR that changed
+# nothing to do with it, so the selection is pinned here and the version is
+# pinned in .github/workflows/pr.yml.
+#
+# The selection is deliberately the "this is probably a bug" half:
+#   E4  imports          E7  statement/comparison errors
+#   E9  syntax/IO        F   pyflakes — undefined names, unused imports
+#
+# Style rules (import sorting, pyupgrade, bugbear, simplify) are a separate,
+# deliberate widening — 68 of their findings auto-fix, ~30 need judgement, and
+# mixing that into the PR that introduces CI would bury the gate in noise.
+[lint]
+select = ["E4", "E7", "E9", "F"]
+
+[lint.per-file-ignores]
+# conftest.py must put src/ on sys.path and set TWITCH_* environment defaults
+# *before* any app module is imported — the imports below that setup are the
+# point of the file, not an oversight.
+"tests/conftest.py" = ["E402"]

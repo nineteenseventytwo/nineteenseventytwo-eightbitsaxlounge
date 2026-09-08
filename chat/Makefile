@@ -7,7 +7,7 @@ GITHUB_REPOSITORY_OWNER ?= mchellmer
 # Lint Python code
 lint:
 	@echo "Running Python linter..."
-	pip3 install ruff --break-system-packages || pip3 install ruff
+	pip3 install ruff==0.16.6 --break-system-packages || pip3 install ruff==0.16.6
 	ruff check src/ tests/
 
 # Run Python tests with coverage

@@ -3,7 +3,6 @@ Lightweight HTTP health check server for Kubernetes probes.
 Runs alongside the Twitch bot to provide liveness and readiness endpoints.
 """
 
-import asyncio
 import logging
 from aiohttp import web
 
