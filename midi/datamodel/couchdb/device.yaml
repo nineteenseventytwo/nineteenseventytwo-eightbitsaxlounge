@@ -17,7 +17,7 @@ ventrisdualreverb:
         Value: 1
       - Name: ReverbEngineB
         Value: 27
-  
+
   # similar for Time, PreDelay, EngineParam5, Size
   # ControlChangeAddresses map to midi CC address for all implementations of the device
   # ControlChangeValueSelector maps to selector for discrete values only otherwise ommitted
@@ -50,6 +50,5 @@ ventrisdualreverb:
       - Name: Control2
         DefaultValue: 0 # default to off
         Value: 0
-    
+
     # repeat for ReverbEngineB which has its own state
-    

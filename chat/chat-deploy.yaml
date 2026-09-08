@@ -4,7 +4,7 @@
   vars:
     # Service Configuration
     midi_service_url: "http://eightbitsaxlounge-midi-service:8080"
-    
+
     # Kubernetes Configuration
     secret_name: "eightbitsaxlounge-chat-secrets"
     configmap_name: "eightbitsaxlounge-chat-config"
@@ -12,16 +12,16 @@
     app_label: "eightbitsaxlounge"
     component_label: "chat"
     container_name: "twitch-bot"
-    
+
     # Default Values
     default_twitch_channel: "the8bitsaxlounge"
     default_log_level: "INFO"
     default_image_base: "ghcr.io"
-    
+
     # Deployment Configuration
     rollout_timeout: "180s"
     log_tail_lines: "20"
-    
+
   tasks:
     - name: Ensure required environment variables are provided
       ansible.builtin.assert:

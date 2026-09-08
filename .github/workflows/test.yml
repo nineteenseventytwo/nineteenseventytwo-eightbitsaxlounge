@@ -6,6 +6,9 @@ on:
 #        branches:
 #        - testbranch
 
+permissions:
+  contents: read
+
 jobs:
   deploy:
     runs-on: self-hosted

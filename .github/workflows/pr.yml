@@ -1,0 +1,119 @@
+---
+name: pr
+
+# The only workflow in this repo that runs on `pull_request`, and the reason
+# every job below pins `runs-on: ubuntu-latest`.
+#
+# ADR-0010 (platform repo): this repository is PUBLIC. A `pull_request`
+# trigger on a self-hosted runner executes a fork's code inside VLAN 20 — a
+# live remote-code-execution path into the lab. The other fifteen workflows
+# here are `runs-on: self-hosted` and are safe only because none of them
+# triggers on `pull_request`. If a job is ever added here that needs the lab
+# network, it does not belong in this file.
+on:
+  pull_request:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Every service is small enough that running all three toolchains on every
+  # PR costs less than maintaining per-service path filters and then debugging
+  # the PR that changed a shared file and skipped the job that mattered.
+  test:
+    name: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      # -- chat: Python ------------------------------------------------------
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.14"
+      - name: chat — lint
+        working-directory: chat
+        run: |
+          pip install ruff==0.16.6   # pinned: chat/ruff.toml pins the rules,
+          ruff check src/ tests/     # this pins the engine that reads them
+      - name: chat — test
+        working-directory: chat
+        run: |
+          pip install -r requirements.txt
+          python -m pytest tests/ --cov=src --cov-report=term --junitxml=test-results.xml
+
+      # -- data: Go ----------------------------------------------------------
+      - uses: actions/setup-go@v6
+        with:
+          go-version: "1.26"
+          cache-dependency-path: data/go.sum
+      - name: data — vet and test
+        working-directory: data
+        run: |
+          go vet ./...
+          go test ./...
+
+      # -- overlay: Node -----------------------------------------------------
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "25"
+          cache: npm
+          cache-dependency-path: overlay/package-lock.json
+      - name: overlay — test
+        working-directory: overlay
+        run: |
+          npm ci
+          npm run test-unit
+
+  # Mirrors the platform repo's lint.yml security job. Reports rather than
+  # blocks on Trivy, matching _build-image.yml's stance ("raise once the base
+  # is clean") — the four floating `:latest` base images would otherwise fail
+  # every PR for a reason unrelated to the change under review.
+  security:
+    name: security
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v5
+
+      # Run directly rather than through bridgecrewio/checkov-action. The
+      # action has a `config_file` input but no `skip_path` one, and it
+      # constructs its own `--directory` argument which overrides the config
+      # file's scope and discards its skip-paths with it — the run then
+      # reports exactly the manifests it was told to ignore, with no error
+      # to explain why. Invoking the CLI means one file decides what is
+      # scanned, and the version is pinned the same way ruff is.
+      - name: Checkov (Dockerfiles, workflows)
+        run: |
+          pip install checkov==3.3.16
+          checkov --config-file .checkov.yaml --compact
+
+      - name: Trivy filesystem scan (vulnerabilities and secrets)
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          scanners: vuln,secret
+          severity: HIGH,CRITICAL
+          exit-code: "0"
+          format: table
+
+  # Cheap, catches the class of mistake this repo is about to make a lot of
+  # while manifests move to the platform repo and Dockerfiles get pinned.
+  yaml:
+    name: yaml
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.14"
+      - run: pip install yamllint
+      - name: yamllint
+        run: yamllint -d relaxed --no-warnings .

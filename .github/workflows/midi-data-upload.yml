@@ -20,6 +20,9 @@ on:
           - effects
           - devices
 
+permissions:
+  contents: read
+
 jobs:
   upload-data:
     name: Upload MIDI Data

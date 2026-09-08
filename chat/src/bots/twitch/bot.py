@@ -1,6 +1,5 @@
 import asqlite
 import logging
-import os
 from typing import TYPE_CHECKING
 from twitchio import eventsub
 if TYPE_CHECKING:

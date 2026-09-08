@@ -10,7 +10,7 @@
       apt:
         name: dphys-swapfile
         state: present
-    
+
     - name: Disable and uninstall dphys-swapfile
       shell: |
         sudo dphys-swapfile swapoff && \

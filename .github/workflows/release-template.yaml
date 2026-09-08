@@ -41,6 +41,9 @@ on:
         description: 'JSON object of component-specific secrets to pass as environment variables'
         required: false
 
+permissions:
+  contents: read
+
 jobs:
   publish:
     name: Build, Test & Publish
@@ -93,10 +96,10 @@ jobs:
           VERSION="${{ steps.version.outputs.version }}"
           IMAGE="ghcr.io/${{ github.repository_owner }}/eightbitsaxlounge-${{ inputs.component }}:${VERSION}"
           echo "🔍 Checking if image exists in remote registry: $IMAGE"
-          
+
           # Remove local image to force remote check
           docker rmi "$IMAGE" 2>/dev/null || true
-          
+
           # Check remote registry (uses docker login credentials)
           if docker manifest inspect "$IMAGE" > /dev/null 2>&1; then
             echo "needs-build=false" >> $GITHUB_OUTPUT
@@ -157,7 +160,7 @@ jobs:
           VERSION="${{ steps.version.outputs.version }}"
           IMAGE="ghcr.io/${{ github.repository_owner }}/eightbitsaxlounge-${{ inputs.component }}:${VERSION}"
           echo "✅ Verifying image was published: $IMAGE"
-          
+
           # Retry verification with backoff (registry propagation delay)
           MAX_RETRIES=10
           RETRY=0
@@ -170,7 +173,7 @@ jobs:
             echo "⏳ Waiting for registry propagation... (attempt $RETRY/$MAX_RETRIES)"
             sleep 2
           done
-          
+
           echo "❌ ERROR: Image was not found in registry after $MAX_RETRIES attempts"
           exit 1
 
@@ -179,7 +182,7 @@ jobs:
         run: |
           VERSION="${{ steps.version.outputs.version }}"
           IMAGE="ghcr.io/${{ github.repository_owner }}/eightbitsaxlounge-${{ inputs.component }}:${VERSION}"
-          
+
           # Direct remote registry check with retry
           MAX_RETRIES=10
           RETRY=0
@@ -195,7 +198,7 @@ jobs:
               sleep 2
             fi
           done
-          
+
           echo "image-exists=false" >> $GITHUB_OUTPUT
           echo "❌ ERROR: Image $VERSION not found in registry after $MAX_RETRIES attempts"
           exit 1
@@ -232,7 +235,7 @@ jobs:
               export "$key=$value"
             done < <(echo "$SECRETS_JSON" | jq -r 'to_entries | .[] | "\(.key)=\(.value)"')
           fi
-          
+
           echo "📦 Deploying configuration for version $VERSION"
           make ${{ inputs.deploy-target }}
         shell: bash

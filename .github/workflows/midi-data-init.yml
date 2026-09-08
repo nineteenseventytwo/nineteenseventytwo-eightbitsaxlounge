@@ -12,6 +12,9 @@ on:
           - dev
           - prod
 
+permissions:
+  contents: read
+
 jobs:
   init-datamodel:
     name: Initialize MIDI Datamodel

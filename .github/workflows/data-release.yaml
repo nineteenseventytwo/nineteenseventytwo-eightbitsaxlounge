@@ -9,6 +9,11 @@ on:
     paths:
       - 'data/version.txt'
 
+permissions:
+  contents: read
+  packages: write
+  security-events: write
+
 jobs:
   release:
     name: Release Data Component

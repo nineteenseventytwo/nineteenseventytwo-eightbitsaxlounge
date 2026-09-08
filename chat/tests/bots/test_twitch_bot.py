@@ -7,7 +7,7 @@ are in `test_twitch_autobot.py`.
 
 import os
 import pytest
-from unittest.mock import Mock, AsyncMock, patch
+from unittest.mock import Mock, AsyncMock
 
 # minimal env for settings init
 os.environ.setdefault('TWITCH_BOT_ID', '1424580736')
