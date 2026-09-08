@@ -87,8 +87,12 @@ jobs:
         with:
           # Scope, skips and their reasons live in .checkov.yaml so they are
           # reviewable next to each other rather than spread across flags.
+          # Everything — directory, frameworks, skip-paths and skip-checks
+          # with their reasons — lives in .checkov.yaml. Passing `directory`
+          # as an action input as well overrides the config file's scope and
+          # silently discards its skip-paths, which is how the first attempt
+          # at this kept reporting the manifests it was told to ignore.
           config_file: .checkov.yaml
-          directory: .
           quiet: true
           soft_fail: false
 

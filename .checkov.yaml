@@ -14,6 +14,9 @@
 #
 # Remove these skip-paths when server/ and */k8s/ are gone. There should be
 # nothing left for them to match.
+directory:
+  - "."
+
 skip-path:
   - ".*/k8s/.*"
   - "^server/.*"
