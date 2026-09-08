@@ -1,0 +1,51 @@
+---
+# Six ecosystems, matching what the seven services actually build with.
+# Grouped and monthly rather than per-package and weekly: this is a
+# single-maintainer repo, and a PR queue nobody reads is the same as no
+# scanning at all. Security updates arrive regardless of this schedule once
+# Dependabot security updates are enabled on the repository.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule: {interval: monthly}
+    groups:
+      actions: {patterns: ["*"]}
+
+  - package-ecosystem: pip
+    directory: "/chat"
+    schedule: {interval: monthly}
+    groups:
+      chat: {patterns: ["*"]}
+
+  - package-ecosystem: gomod
+    directory: "/data/go"
+    schedule: {interval: monthly}
+    groups:
+      data: {patterns: ["*"]}
+
+  - package-ecosystem: npm
+    directory: "/overlay"
+    schedule: {interval: monthly}
+    groups:
+      overlay: {patterns: ["*"]}
+
+  - package-ecosystem: nuget
+    directory: "/midi"
+    schedule: {interval: monthly}
+    groups:
+      midi: {patterns: ["*"]}
+
+  # Catches the floating `:latest` bases in data, db and state once they are
+  # pinned to digests — until then there is nothing for it to bump.
+  - package-ecosystem: docker
+    directories:
+      - "/chat"
+      - "/data"
+      - "/db"
+      - "/midi"
+      - "/overlay"
+      - "/state"
+    schedule: {interval: monthly}
+    groups:
+      base-images: {patterns: ["*"]}
