@@ -60,7 +60,7 @@ jobs:
       image-exists: ${{ steps.final-check.outputs.image-exists }}
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v7
 
       - name: Read Version
         id: version
@@ -84,7 +84,7 @@ jobs:
 
       - name: Log in to GitHub Container Registry (for verification)
         if: inputs.requires-docker-login
-        uses: docker/login-action@v2
+        uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -138,7 +138,7 @@ jobs:
 
       - name: Re-authenticate before push (prevent concurrent pipeline conflicts)
         if: inputs.requires-docker-login && steps.check-artifact.outputs.needs-build == 'true'
-        uses: docker/login-action@v2
+        uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -213,7 +213,7 @@ jobs:
         working-directory: ./${{ inputs.component }}
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v7
 
       - name: Display Deployment Info
         run: |
