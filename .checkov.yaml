@@ -44,15 +44,3 @@ skip-check:
   # `environment:` gate, not the absence of inputs.
   - CKV_GHA_7
 
-  # ---- Temporary. Both are real, both need an image rebuild and a runtime
-  # check, and both are the subject of the next PR (migration plan F6 and the
-  # PSS-restricted blocker found by this workflow's first run). Not skipped
-  # because they are wrong — skipped because fixing them blind is how you
-  # discover at 2am that a container cannot write to its own cache directory.
-  #
-  # CKV_DOCKER_3: data, db, overlay and state run as root. The prod tenant
-  # namespace enforces Pod Security Standards `restricted`, which requires
-  # runAsNonRoot — so these four will fail admission on migration.
-  - CKV_DOCKER_3
-  # CKV_DOCKER_7: alpine:latest, couchdb:latest, natsio/nats-box:latest.
-  - CKV_DOCKER_7
