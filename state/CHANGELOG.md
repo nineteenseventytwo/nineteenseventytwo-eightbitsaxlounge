@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.0.21] - 2026-09-09
+
+### Changed
+- Non-root: new `nats-run` user (uid/gid 1000) — this base ships no
+  dedicated user at all, confirmed live (default id is uid=0(root), no
+  `nats` entry in /etc/passwd or /etc/group).
+- Pinned `natsio/nats-box:latest` and `nats:2-alpine` to specific versions
+  plus digests (0.14.5, 2.14.6-alpine — confirmed via `nats-server -v`
+  before pinning, not guessed).
+
+
 ## [0.0.19] - 2026-03-09
 
 ### Changed
