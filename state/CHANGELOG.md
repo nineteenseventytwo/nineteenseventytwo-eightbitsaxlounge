@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.0.23] - 2026-09-09
+
+### Fixed
+- `make test`'s health check (`curl http://localhost:8222/varz`) ran from
+  the *caller's* shell, not the container's — invisible on a plain
+  workstation, where caller and container share the host network, but
+  broken on this org's self-hosted runners, confirmed live:
+  `1972-console-1`'s GitHub Actions runners are themselves containers on a
+  custom bridge network (`github-runner_default`, not `--network host`),
+  so `localhost` inside the runner is a different network namespace from
+  where the sibling smoke-test container's published ports actually land.
+  Pre-existing, unrelated to 0.0.21/0.0.22 — it just hadn't been exercised
+  since the runner moved to this org.
+
+  Switched the check to `docker exec nats-smoke-test wget ...`, matching
+  the pattern `jetstream-bootstrap.sh` already used internally and never
+  had this problem. `docker exec` attaches to the target's own network
+  namespace directly through the daemon API — it never traverses a
+  network, so it works the same whether the caller is a bare workstation,
+  a host-networked CI runner, or (as here) a sibling container on its own
+  isolated bridge network.
+
+
 ## [0.0.22] - 2026-09-09
 
 ### Fixed
