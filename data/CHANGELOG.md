@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.0.1] - 2026-09-09
+
+### Changed
+- No functional change — releases the image built from #65's Dockerfile
+  hardening (non-root `app` user, digest-pinned `alpine:3.22`) under the
+  new org. `data-release.yaml`'s push trigger only watches
+  `data/version.txt`, so #65 never fired it.
+
+
 ## [2.0.0]
 
 ### Changed
