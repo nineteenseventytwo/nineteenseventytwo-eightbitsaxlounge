@@ -53,7 +53,7 @@ test:
 		"$(IMAGE_BASE):$(VERSION)" -c /etc/nats/nats.conf > /dev/null 2>&1
 	@sleep 2
 	@echo "Verifying NATS is responsive..."
-	@if curl -s http://localhost:8222/varz > /dev/null 2>&1; then \
+	@if docker exec nats-smoke-test wget -q -O /dev/null http://localhost:8222/varz > /dev/null 2>&1; then \
 		echo "✓ NATS monitoring endpoint is healthy"; \
 	else \
 		echo "ERROR: NATS health check failed"; \
