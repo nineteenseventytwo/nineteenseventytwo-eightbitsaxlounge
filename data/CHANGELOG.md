@@ -1,5 +1,22 @@
 # Changelog
 
+## [2.0.2] - 2026-09-09
+
+### Fixed
+- `couchURL()` built the CouchDB connection URL with a raw `fmt.Sprintf`,
+  embedding the password into the URL's userinfo component with no
+  escaping. Confirmed live: a Vault-generated password containing `/`
+  corrupted every request through this function, including the `/health`
+  check the readiness/liveness probes depend on — the dev deployment sat
+  crash-looping on its startup probe with 503s and no error more specific
+  than a generic connection failure. The prod deployment happened to get a
+  password with no special characters and never hit it, which is the
+  concerning part: this was one password rotation away from breaking
+  production too. Rebuilt with `net/url.URL` and `url.UserPassword`, which
+  percent-encodes the userinfo component per RFC 3986 — every call site
+  still receives a plain string via `.String()`, so nothing downstream
+  changes.
+
 ## [2.0.1] - 2026-09-09
 
 ### Changed
