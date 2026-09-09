@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.0.22] - 2026-09-09
+
+### Fixed
+- `make test`'s smoke test crashed outright once the image ran non-root by
+  default (0.0.21) — the test runs the image with no volume mounted, and
+  non-root has nowhere to write `/data/jetstream` without an owned
+  directory already baked in. `RUN mkdir -p /data && chown nats-run:nats-run
+  /data` in the Dockerfile fixes it; the real Kubernetes deployment is
+  unaffected either way, since a PersistentVolumeClaim always mounts over
+  this path and needs `securityContext.fsGroup` regardless of what's baked
+  into the image.
+
 ## [0.0.21] - 2026-09-09
 
 ### Changed

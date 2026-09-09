@@ -31,6 +31,18 @@ RUN chmod +x /usr/local/bin/jetstream-bootstrap.sh
 COPY nats.conf.template /etc/nats/nats.conf.template
 RUN chown -R nats-run:nats-run /etc/nats
 
+# Empty placeholder, owned by nats-run — not for the real deployment (a
+# PersistentVolumeClaim always mounts over this path in Kubernetes, and
+# that mount arrives root-owned regardless of what's baked here, which is
+# exactly why the platform-repo StatefulSet still needs
+# securityContext.fsGroup: 1000 — this doesn't replace that). It's for
+# `make test`'s smoke test, which runs the image with no volume mounted at
+# all: confirmed live, without this the container crashes outright —
+# "[FTL] Can't start JetStream: could not create storage directory - mkdir
+# /data: permission denied" — since non-root has nothing to write to
+# otherwise.
+RUN mkdir -p /data && chown nats-run:nats-run /data
+
 # What this does NOT solve: JetStream's store_dir is /data/jetstream
 # (nats.conf.template), and /data is the PVC in
 # state/k8s/statefulset.yaml's volumeClaimTemplate. Same shape as db's
