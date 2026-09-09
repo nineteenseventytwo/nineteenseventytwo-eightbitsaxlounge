@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 )
 
@@ -290,11 +291,22 @@ func (s *ProdCouchService) CheckHealth() error {
 // couchURL builds the base CouchDB URL with embedded basic-auth credentials.
 //
 //	http://COUCHDB_USER:COUCHDB_PASSWORD@COUCHDB_ENDPOINT
+//
+// Built with net/url rather than fmt.Sprintf: a raw Sprintf embeds the
+// password into the URL's userinfo component with no escaping, so any
+// generated password containing '/', '@', ':', or other URL-significant
+// characters corrupts the URL outright — confirmed live 2026-09-09
+// against a Vault-generated password containing '/', which broke every
+// call through couchURL() including the /health check, with no error
+// surfaced beyond a generic connection/status failure. url.UserPassword
+// percent-encodes the userinfo component per RFC 3986; every call site
+// still receives a plain string via .String(), so nothing downstream
+// changes.
 func couchURL() string {
-	return fmt.Sprintf(
-		"http://%s:%s@%s",
-		os.Getenv("COUCHDB_USER"),
-		os.Getenv("COUCHDB_PASSWORD"),
-		os.Getenv("COUCHDB_ENDPOINT"),
-	)
+	u := url.URL{
+		Scheme: "http",
+		User:   url.UserPassword(os.Getenv("COUCHDB_USER"), os.Getenv("COUCHDB_PASSWORD")),
+		Host:   os.Getenv("COUCHDB_ENDPOINT"),
+	}
+	return u.String()
 }
