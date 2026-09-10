@@ -34,7 +34,7 @@ test:
 	@echo "Running .NET tests..."
 	@dotnet restore NineteenSeventyTwo.EightBitSaxLounge.Midi.sln
 	@dotnet build NineteenSeventyTwo.EightBitSaxLounge.Midi.sln --no-restore --configuration Release
-	@dotnet test NineteenSeventyTwo.EightBitSaxLounge.Midi.sln --no-build --configuration Release --verbosity normal
+	@dotnet test --solution NineteenSeventyTwo.EightBitSaxLounge.Midi.sln --no-build --configuration Release
 
 # Build Docker image locally
 build-image:

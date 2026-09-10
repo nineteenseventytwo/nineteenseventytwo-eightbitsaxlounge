@@ -1,8 +1,20 @@
 # Changelog
 ## [4.0.3] - 2026-09-10
 
+### Fixed
+- `dotnet test` was broken on .NET 10 SDK for this solution: xunit.v3 sets
+  `IsTestingPlatformApplication=true`, which MSBuild's legacy `VSTest`
+  target now hard-errors on ("Testing with VSTest target is no longer
+  supported ... see https://aka.ms/dotnet-test-mtp-error"). This had never
+  been exercised since the 4.0.2 .NET 10 upgrade because no release had
+  run since. Fixed by declaring `"test": {"runner":
+  "Microsoft.Testing.Platform"}` in midi/global.json (the directory the
+  Makefile actually runs `dotnet` from) and switching the Makefile's test
+  invocation to `dotnet test --solution` (the new CLI's required syntax
+  for a solution path).
+
 ### Changed
-- No functional change — version bump to publish the first container image under
+- Version bump to publish the first container image under
   the `nineteenseventytwo` GHCR org (ADR-0012 platform migration); the repo
   transferred orgs after 4.0.2 was released.
 
