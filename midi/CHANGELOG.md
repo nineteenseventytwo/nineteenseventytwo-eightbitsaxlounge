@@ -1,4 +1,11 @@
 # Changelog
+## [4.0.3] - 2026-09-10
+
+### Changed
+- No functional change — version bump to publish the first container image under
+  the `nineteenseventytwo` GHCR org (ADR-0012 platform migration); the repo
+  transferred orgs after 4.0.2 was released.
+
 ## [4.0.2] - 2026-03-13
 
 ### Changed
