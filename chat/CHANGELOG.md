@@ -1,5 +1,12 @@
 # Changelog
 
+## [7.0.1] - 2026-09-10
+
+### Changed
+- Version bump to publish the first container image under the
+  `nineteenseventytwo` GHCR org (ADR-0012 platform migration); no image
+  exists under the new org for 7.0.0.
+
 ## [6.0.4] - 2026-03-12
 
 ### Added
