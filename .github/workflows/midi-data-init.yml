@@ -34,9 +34,33 @@ jobs:
             echo "NAMESPACE=eightbitsaxlounge-dev" >> $GITHUB_ENV
           fi
 
+      # This job runs inside the containerized self-hosted runner, not as
+      # mchellmer, who owns ansible-console. The ansible-runner container
+      # the Makefile spawns is a *sibling* container over the shared docker
+      # socket, so --user alone can't bridge that identity gap; group
+      # membership does instead (ansible-console is group:docker
+      # mode:0640). The gid read here is the *host's* docker group, not
+      # this container's own unrelated one — see
+      # nineteenseventytwo-platform's deploy-nodes.yml for the original
+      # write-up of this exact gotcha.
+      - name: Read the docker group gid
+        id: dockergid
+        run: |
+          echo "value=$(stat -c %g /var/run/docker.sock)" >> "$GITHUB_OUTPUT"
+
+      # ansible-console authenticates via a Vault-signed certificate, not a
+      # static authorized_keys entry. role_id/secret_id live only on this
+      # host and never enter GitHub.
+      - name: Sign a fresh SSH certificate for this run
+        env:
+          VAULT_ADDR: https://vault.eightbitsaxlounge.com
+        run: ../bootstrap/ssh/sign-ci.sh
+
       - name: Run Data Init
         run: make data-init
         env:
           NAMESPACE: ${{ env.NAMESPACE }}
-          AUTH_CLIENT_0_ID: ${{ secrets.AUTHENTICATION_CLIENTS_0_CLIENTID }}
-          AUTH_CLIENT_0_SECRET: ${{ secrets.AUTHENTICATION_CLIENTS_0_CLIENTSECRET }}
+          DOCKER_GID: ${{ steps.dockergid.outputs.value }}
+          # sign-ci.sh writes the cert into $RUNNER_TEMP, not next to the
+          # key — see the Makefile's own comment on ANSIBLE_CONSOLE_CERT.
+          ANSIBLE_CONSOLE_CERT: ${{ runner.temp }}/ansible-console-cert.pub

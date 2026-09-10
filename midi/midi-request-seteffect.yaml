@@ -1,15 +1,17 @@
 ---
+# See midi-data-init.yaml's header comment for why this runs an in-cluster
+# Job instead of curling the midi service's ClusterIP directly from a node
+# (blocked by the tenant's default-deny NetworkPolicy).
 - name: Send SetEffect Request to MIDI Service
   hosts: master
   vars:
     k8s_namespace: "{{ lookup('env', 'NAMESPACE') | default('eightbitsaxlounge-dev', true) }}"
-    auth_client_id: "{{ lookup('env', 'AUTH_CLIENT_0_ID') }}"
-    auth_client_secret: "{{ lookup('env', 'AUTH_CLIENT_0_SECRET') }}"
     device: "{{ lookup('env', 'DEVICE') }}"
     device_effect: "{{ lookup('env', 'DEVICE_EFFECT') }}"
     device_effect_setting: "{{ lookup('env', 'DEVICE_EFFECT_SETTING') }}"
     value: "{{ lookup('env', 'VALUE') | default('', true) }}"
     selection: "{{ lookup('env', 'SELECTION') | default('', true) }}"
+    job_name: "midi-seteffect-{{ ansible_date_time.epoch }}"
 
   tasks:
     - name: Validate required parameters
@@ -21,102 +23,106 @@
         - device_effect
         - device_effect_setting
 
-    - name: Get MIDI service details
+    - name: Apply the SetEffect Job
       ansible.builtin.shell: |
-        kubectl get svc -n {{ k8s_namespace }} -l app=eightbitsaxlounge,component=midi -o jsonpath='{.items[0].metadata.name}'
-      register: service_name_result
-      failed_when: service_name_result.stdout == ""
+        set -eu
+        cat <<'JOBEOF' | kubectl apply -f -
+        apiVersion: batch/v1
+        kind: Job
+        metadata:
+          name: {{ job_name }}
+          namespace: {{ k8s_namespace }}
+        spec:
+          backoffLimit: 0
+          ttlSecondsAfterFinished: 300
+          template:
+            spec:
+              restartPolicy: Never
+              containers:
+                - name: seteffect
+                  image: curlimages/curl:latest
+                  securityContext:
+                    runAsNonRoot: true
+                    runAsUser: 100
+                    allowPrivilegeEscalation: false
+                    capabilities:
+                      drop: ["ALL"]
+                    seccompProfile:
+                      type: RuntimeDefault
+                  env:
+                    - name: CLIENT_ID
+                      valueFrom:
+                        secretKeyRef:
+                          name: eightbitsaxlounge-midi-secrets
+                          key: client-0-id
+                    - name: CLIENT_SECRET
+                      valueFrom:
+                        secretKeyRef:
+                          name: eightbitsaxlounge-midi-secrets
+                          key: client-0-secret
+                    - name: DEVICE
+                      value: {{ device | to_json }}
+                    - name: DEVICE_EFFECT
+                      value: {{ device_effect | to_json }}
+                    - name: DEVICE_EFFECT_SETTING
+                      value: {{ device_effect_setting | to_json }}
+                    - name: VALUE
+                      value: {{ value | to_json }}
+                    - name: SELECTION
+                      value: {{ selection | to_json }}
+                  command: ["sh", "-c"]
+                  args:
+                    - |
+                      set -eu
+                      TOKEN=$(curl -sf -X POST http://eightbitsaxlounge-midi-service:8080/api/token \
+                        -H "Content-Type: application/json" \
+                        -d "{\"ClientId\":\"$CLIENT_ID\",\"ClientSecret\":\"$CLIENT_SECRET\"}" \
+                        | sed -n 's/.*"access_token":"\([^"]*\)".*/\1/p')
+                      if [ -n "${VALUE:-}" ]; then
+                        BODY=$(printf '{"DeviceName":"%s","DeviceEffectName":"%s","DeviceEffectSettingName":"%s","Value":%s}' \
+                          "$DEVICE" "$DEVICE_EFFECT" "$DEVICE_EFFECT_SETTING" "$VALUE")
+                      else
+                        BODY=$(printf '{"DeviceName":"%s","DeviceEffectName":"%s","DeviceEffectSettingName":"%s","Selection":"%s"}' \
+                          "$DEVICE" "$DEVICE_EFFECT" "$DEVICE_EFFECT_SETTING" "$SELECTION")
+                      fi
+                      curl -sf -X POST http://eightbitsaxlounge-midi-service:8080/api/Midi/SetEffect \
+                        -H "Content-Type: application/json" \
+                        -H "Authorization: Bearer $TOKEN" \
+                        -d "$BODY"
+        JOBEOF
+      register: apply_result
 
-    - name: Get service cluster IP
+    - name: Wait for the Job to finish
       ansible.builtin.shell: |
-        kubectl get svc -n {{ k8s_namespace }} {{ service_name_result.stdout }} -o jsonpath='{.spec.clusterIP}'
-      register: service_ip_result
+        kubectl wait --for=condition=complete --timeout=60s job/{{ job_name }} -n {{ k8s_namespace }} \
+          || kubectl wait --for=condition=failed --timeout=5s job/{{ job_name }} -n {{ k8s_namespace }} \
+          || true
+      register: wait_result
+      changed_when: false
 
-    - name: Set service URL
-      ansible.builtin.set_fact:
-        service_url: "http://{{ service_ip_result.stdout }}:8080"
-
-    - name: Request authentication token
-      ansible.builtin.uri:
-        url: "{{ service_url }}/api/token"
-        method: POST
-        body_format: json
-        body:
-          clientId: "{{ auth_client_id }}"
-          clientSecret: "{{ auth_client_secret }}"
-        status_code: [200, 201]
-        return_content: yes
-      register: token_response
-      no_log: true
+    - name: Fetch Job logs
+      ansible.builtin.shell: |
+        kubectl logs job/{{ job_name }} -n {{ k8s_namespace }} --tail=-1
+      register: job_logs
+      changed_when: false
       failed_when: false
-
-    - name: Show token request error
-      ansible.builtin.debug:
-        msg: |
-          Token request failed!
-          Status: {{ token_response.status | default('N/A') }}
-          Message: {{ token_response.msg | default('N/A') }}
-      when: token_response.status is defined and token_response.status not in [200, 201]
-
-    - name: Fail on token request error
-      ansible.builtin.fail:
-        msg: "Failed to obtain authentication token. See error above."
-      when: token_response.status is defined and token_response.status not in [200, 201]
-
-    - name: Debug token response structure
-      ansible.builtin.debug:
-        msg: "Token response: {{ token_response.json }}"
-      when: token_response.status in [200, 201]
-
-    - name: Parse token from response
-      ansible.builtin.set_fact:
-        auth_token: "{{ token_response.json.access_token }}"
-      when: token_response.status in [200, 201]
-
-    - name: Verify token was parsed
-      ansible.builtin.fail:
-        msg: "Token not found in response. Check response structure above."
-      when: auth_token is not defined or auth_token == ""
-
-    - name: Build request body
-      ansible.builtin.set_fact:
-        request_body: "{{ request_body | default({}) | combine({item.key: item.value}) }}"
-      when: item.value != ""
-      loop:
-        - { key: 'deviceName', value: '{{ device }}' }
-        - { key: 'deviceEffectName', value: '{{ device_effect }}' }
-        - { key: 'deviceEffectSettingName', value: '{{ device_effect_setting }}' }
-        - { key: 'value', value: '{{ value | int if value != "" else "" }}' }
-        - { key: 'selection', value: '{{ selection }}' }
-
-    - name: Display request parameters
-      ansible.builtin.debug:
-        msg: |
-          Sending SetEffect request:
-          Device: {{ device }}
-          Device Effect: {{ device_effect }}
-          Device Effect Setting: {{ device_effect_setting }}
-          Value: {{ value if value != "" else "not provided" }}
-          Selection: {{ selection if selection != "" else "not provided" }}
-
-    - name: Send SetEffect request
-      ansible.builtin.uri:
-        url: "{{ service_url }}/api/Midi/SetEffect"
-        method: POST
-        headers:
-          Authorization: "Bearer {{ auth_token }}"
-          Content-Type: "application/json"
-        body_format: json
-        body: "{{ request_body }}"
-        status_code: [200, 201, 204]
-        return_content: yes
-      register: seteffect_result
 
     - name: Display SetEffect result
       ansible.builtin.debug:
-        msg: "SetEffect request completed successfully (HTTP {{ seteffect_result.status }})"
+        msg: "{{ job_logs.stdout }}"
 
-    - name: Display response body on success
-      ansible.builtin.debug:
-        msg: "{{ seteffect_result.content }}"
-      when: seteffect_result.content is defined and seteffect_result.content | length > 0
+    - name: Check the Job actually succeeded
+      ansible.builtin.shell: |
+        kubectl get job/{{ job_name }} -n {{ k8s_namespace }} -o jsonpath='{.status.succeeded}'
+      register: job_status
+      changed_when: false
+
+    - name: Clean up the Job
+      ansible.builtin.shell: |
+        kubectl delete job/{{ job_name }} -n {{ k8s_namespace }} --ignore-not-found
+      changed_when: false
+
+    - name: Fail if the Job did not succeed
+      ansible.builtin.fail:
+        msg: "SetEffect Job did not report success. See logs above."
+      when: job_status.stdout != "1"
