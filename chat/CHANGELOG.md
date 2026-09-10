@@ -1,5 +1,25 @@
 # Changelog
 
+## [7.0.2] - 2026-09-10
+
+### Fixed
+- The 7.0.1 push above never actually built or published anything:
+  `chat-release.yaml` only triggers on changes to `chat/version.txt`, and
+  the `make test` fix landed in a follow-up commit that didn't touch that
+  file, so no new run fired. This bump exists purely to retrigger the
+  release with the fix in place.
+- `make test` failed on the self-hosted runner: pip isn't installed there
+  at all (not just missing a `pip3` symlink). Fixed by running the test
+  suite in an isolated `python:3.14-slim` container instead, the same
+  pattern `overlay/Makefile` already uses.
+
+## [7.0.1] - 2026-09-10
+
+### Changed
+- Version bump to publish the first container image under the
+  `nineteenseventytwo` GHCR org (ADR-0012 platform migration); no image
+  exists under the new org for 7.0.0.
+
 ## [6.0.4] - 2026-03-12
 
 ### Added
