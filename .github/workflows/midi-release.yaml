@@ -293,8 +293,23 @@ jobs:
       run: make deploy-k8s
 
   # Windows PC deployment (runs in parallel with deploy-k8s after both builds complete)
+  #
+  # Matrix, not a single run: midi-pc-deploy.yaml keys its target directory,
+  # NSSM service name, and port entirely off an ENVIRONMENT env var this job
+  # never used to set at all. Before this fix that meant every run silently
+  # deployed once, defaulting to the "not dev" (prod-shaped) branch of every
+  # ternary in that playbook — dev was never actually reached from CI.
+  # Confirmed live 2026-09-10 running this by hand for both environments
+  # instead. AUTHENTICATION__* stays one shared secret set across both legs
+  # for now — a known gap, not an oversight: the k8s side moved to separate
+  # per-environment Vault secrets during the platform migration, but the PC
+  # side didn't follow. Low priority to close because the PC's device-mode
+  # instance never actually validates a JWT in practice (it only checks
+  # MidiDeviceService:BypassKey — see midi-deployment.yaml's own comment in
+  # nineteenseventytwo-platform for why), so a mismatched signing key here
+  # doesn't break anything functional today.
   deploy-pc:
-    name: Deploy to Windows PC
+    name: Deploy to Windows PC (${{ matrix.environment }})
     needs: [check-artifacts, build-pc, test]
     if: >-
       always() && (
@@ -302,6 +317,9 @@ jobs:
         (needs.build-pc.result == 'success' && (needs.test.result == 'success' || needs.test.result == 'skipped'))
       )
     runs-on: self-hosted
+    strategy:
+      matrix:
+        environment: [dev, prod]
     steps:
     - name: Checkout Code
       uses: actions/checkout@v7
@@ -330,14 +348,27 @@ jobs:
           -H "Accept: application/octet-stream" {} \
           -o "artifacts/midi-api-$VERSION.tar.gz"
 
+    # ansible-playbook isn't installed on this runner's own image — see
+    # midi/Makefile's own comment on ANSIBLE_RUNNER/DOCKER_USER for the
+    # sibling-container pattern this feeds. pi-to-midi-host is a static
+    # key already authorized directly on the PC (server/init-pc.yaml), not
+    # a Vault-signed cert, so unlike the data-seeding workflows this only
+    # needs the docker-gid step, not sign-ci.sh.
+    - name: Read the docker group gid
+      id: dockergid
+      run: |
+        echo "value=$(stat -c %g /var/run/docker.sock)" >> "$GITHUB_OUTPUT"
+
     - name: Deploy MIDI PC
       working-directory: ./midi
       env:
+        ENVIRONMENT: ${{ matrix.environment }}
         VERSION: ${{ needs.check-artifacts.outputs.version }}
         GITHUB_REPOSITORY_OWNER: ${{ github.repository_owner }}
         ARTIFACT_PATH: ${{ github.workspace }}/artifacts/midi-api-${{ needs.check-artifacts.outputs.version }}.tar.gz
         NEEDS_BUILD: ${{ needs.check-artifacts.outputs.needs-build-pc }}
-        CONNECTIONSTRINGS__EIGHTBITSAXLOUNGEDATALAYER: ${{ secrets.CONNECTIONSTRINGS_EIGHTBITSAXLOUNGEDATALAYER }}
+        DOCKER_GID: ${{ steps.dockergid.outputs.value }}
+        CONNECTIONSTRINGS__EIGHTBITSAXLOUNGEDATALAYER: ${{ matrix.environment == 'prod' && secrets.CONNECTIONSTRINGS_EIGHTBITSAXLOUNGEDATALAYER_PROD || secrets.CONNECTIONSTRINGS_EIGHTBITSAXLOUNGEDATALAYER_DEV }}
         AUTHENTICATION__TOKENEXPIRYINMINUTES: ${{ secrets.AUTHENTICATION_TOKENEXPIRYINMINUTES }}
         AUTHENTICATION__SECRETKEY: ${{ secrets.AUTHENTICATION_SECRETKEY }}
         AUTHENTICATION__ISSUER: ${{ secrets.AUTHENTICATION_ISSUER }}

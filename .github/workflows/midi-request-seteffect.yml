@@ -68,6 +68,19 @@ jobs:
             echo "NAMESPACE=eightbitsaxlounge-dev" >> $GITHUB_ENV
           fi
 
+      # See midi-data-init.yml for why this step and the docker-gid one
+      # below exist — same sibling-container-over-shared-docker-socket
+      # pattern documented there.
+      - name: Read the docker group gid
+        id: dockergid
+        run: |
+          echo "value=$(stat -c %g /var/run/docker.sock)" >> "$GITHUB_OUTPUT"
+
+      - name: Sign a fresh SSH certificate for this run
+        env:
+          VAULT_ADDR: https://vault.eightbitsaxlounge.com
+        run: ../bootstrap/ssh/sign-ci.sh
+
       - name: Run Set Effect
         run: |
           make request-seteffect \
@@ -78,5 +91,5 @@ jobs:
             SELECTION="${{ github.event.inputs.selection }}"
         env:
           NAMESPACE: ${{ env.NAMESPACE }}
-          AUTH_CLIENT_0_ID: ${{ secrets.AUTHENTICATION_CLIENTS_0_CLIENTID }}
-          AUTH_CLIENT_0_SECRET: ${{ secrets.AUTHENTICATION_CLIENTS_0_CLIENTSECRET }}
+          DOCKER_GID: ${{ steps.dockergid.outputs.value }}
+          ANSIBLE_CONSOLE_CERT: ${{ runner.temp }}/ansible-console-cert.pub
