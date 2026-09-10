@@ -1,7 +1,8 @@
 # Changelog
-## [4.0.3] - 2026-09-10
+## [4.0.4] - 2026-09-10
 
 ### Fixed
+- The 4.0.3 push above never actually built or published anything: `midi-release.yaml` only triggers on changes to `midi/version.txt`, and the test-runner fix landed in a follow-up commit that didn't touch that file, so no new run fired. This bump exists purely to retrigger the release with the fix in place — no separate code change from 4.0.3.
 - `dotnet test` was broken on .NET 10 SDK for this solution: xunit.v3 sets
   `IsTestingPlatformApplication=true`, which MSBuild's legacy `VSTest`
   target now hard-errors on ("Testing with VSTest target is no longer
