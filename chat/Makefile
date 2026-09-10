@@ -11,10 +11,22 @@ lint:
 	ruff check src/ tests/
 
 # Run Python tests with coverage
+# Runs in an isolated python:3.14-slim container, not on the runner's own
+# host: the self-hosted runner's image doesn't ship pip at all (confirmed
+# live — not even `python3 -m pip` — a casualty of the same
+# minimal/hardened image that also dropped ansible-playbook, see
+# nineteenseventytwo-eightbitsaxlounge#75's Makefile comments in midi/).
+# Never exercised before because no chat release had run since the org
+# transfer. Same pattern overlay/Makefile already uses for its own tests.
 test:
-	@echo "Running Python tests..."
-	pip3 install -r requirements.txt --break-system-packages || pip3 install -r requirements.txt
-	python3 -m pytest tests/ --cov=src --cov-report=xml --cov-report=term --junitxml=test-results.xml
+	@echo "Running tests in Docker (python:3.14-slim)..."
+	docker run --rm \
+		--user $$(id -u):$$(id -g) \
+		-v "$(CURDIR):/app" \
+		-w /app \
+		-e HOME=/tmp \
+		python:3.14-slim \
+		bash -c "pip install --no-cache-dir -r requirements.txt && python -m pytest tests/ --cov=src --cov-report=xml --cov-report=term --junitxml=test-results.xml"
 	@echo "All tests passed"
 
 # Build Docker image locally
