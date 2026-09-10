@@ -429,7 +429,7 @@
             "id": "browser_source",
             "versioned_id": "browser_source",
             "settings": {
-                "url": "http://overlay.192.168.68.240.sslip.io/grid.html",
+                "url": "https://overlay.eightbitsaxlounge.com/grid.html",
                 "width": 1920,
                 "height": 1080,
                 "fps_custom": true,
@@ -465,7 +465,7 @@
             "id": "browser_source",
             "versioned_id": "browser_source",
             "settings": {
-                "url": "http://overlay-dev.192.168.68.240.sslip.io/grid.html",
+                "url": "https://overlay-dev.eightbitsaxlounge.com/grid.html",
                 "width": 1920,
                 "height": 1080,
                 "restart_when_active": true

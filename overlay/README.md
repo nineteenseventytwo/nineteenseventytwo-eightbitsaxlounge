@@ -30,9 +30,9 @@ export NATS_PASS=overlaypw
   - `make deploy`
 
 - Browser access:
-  - kubernetes via Ingress, ClusterIP service port 80->3000:
-    - dev: `overlay-dev.<external ip>.sslip.io:80`
-    - prod: `overlay.<external ip>.sslip.io:80`
+  - kubernetes via the shared platform Gateway (ADR-0012), ClusterIP service port 80->3000:
+    - dev: `https://overlay-dev.eightbitsaxlounge.com`
+    - prod: `https://overlay.eightbitsaxlounge.com`
   - local:
     - `http://localhost:3000`
 
@@ -67,7 +67,12 @@ Quick steps
 
 1. Add a *Browser Source* in OBS and point the URL to the overlay service:
    - Local dev: `http://localhost:3000/grid.html`
-   - In-cluster / production: `https://<overlay_ingress_host>/` (use `/grid.html` for the demo)
+   - In-cluster dev: `https://overlay-dev.eightbitsaxlounge.com/grid.html`
+   - In-cluster production: `https://overlay.eightbitsaxlounge.com/grid.html`
+   - Requires an OPNsense Unbound host override for `overlay`/`overlay-dev` under
+     `eightbitsaxlounge.com` — see nineteenseventytwo-platform's
+     `docs/01-network-validation.md`. Without it OBS can't resolve either
+     hostname even though the service is up.
 
 2. Recommended Browser Source properties:
    - **Width:** 1920, **Height:** 1080
@@ -79,4 +84,4 @@ Troubleshooting
 
 - If the overlay is blank in OBS but works in a normal browser: open `http://localhost:3000/grid.html` in Chrome/Firefox and check devtools for console/network errors.
 - Confirm the overlay server is running (logs show `overlay: listening on 3000`) and that NATS is reachable (server logs show `emit event overlay.*`).
-- If OBS fails to load remote (HTTPS) overlay, ensure the ingress has valid TLS and the URL is reachable from the OBS host.
+- If OBS fails to load remote (HTTPS) overlay, ensure the Gateway's cert is valid and the URL is reachable from the OBS host (DNS override in place, `curl -I <url>` from the OBS machine).
