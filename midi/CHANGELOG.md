@@ -1,4 +1,24 @@
 # Changelog
+## [4.0.4] - 2026-09-10
+
+### Fixed
+- The 4.0.3 push above never actually built or published anything: `midi-release.yaml` only triggers on changes to `midi/version.txt`, and the test-runner fix landed in a follow-up commit that didn't touch that file, so no new run fired. This bump exists purely to retrigger the release with the fix in place — no separate code change from 4.0.3.
+- `dotnet test` was broken on .NET 10 SDK for this solution: xunit.v3 sets
+  `IsTestingPlatformApplication=true`, which MSBuild's legacy `VSTest`
+  target now hard-errors on ("Testing with VSTest target is no longer
+  supported ... see https://aka.ms/dotnet-test-mtp-error"). This had never
+  been exercised since the 4.0.2 .NET 10 upgrade because no release had
+  run since. Fixed by declaring `"test": {"runner":
+  "Microsoft.Testing.Platform"}` in midi/global.json (the directory the
+  Makefile actually runs `dotnet` from) and switching the Makefile's test
+  invocation to `dotnet test --solution` (the new CLI's required syntax
+  for a solution path).
+
+### Changed
+- Version bump to publish the first container image under
+  the `nineteenseventytwo` GHCR org (ADR-0012 platform migration); the repo
+  transferred orgs after 4.0.2 was released.
+
 ## [4.0.2] - 2026-03-13
 
 ### Changed
