@@ -11,8 +11,8 @@ from config.settings import settings
 LOGGER: logging.Logger = logging.getLogger("TwitchioAutoBot")
 CLIENT_ID: str = settings.twitch_client_id  # The CLIENT ID from the Twitch Dev Console
 CLIENT_SECRET: str = settings.twitch_client_secret  # The CLIENT SECRET from the Twitch Dev Console
-BOT_ID: int = settings.twitch_bot_id  # The Account ID of the bot user...
-OWNER_ID: int = settings.twitch_owner_id  # Your personal User ID..
+BOT_ID: str = settings.twitch_bot_id  # The Account ID of the bot user...
+OWNER_ID: str = settings.twitch_owner_id  # Your personal User ID..
 
 
 class TwitchioAutoBot(commands.AutoBot):
