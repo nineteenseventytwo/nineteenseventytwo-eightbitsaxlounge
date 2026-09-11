@@ -28,9 +28,15 @@ on:
         type: string
         default: ''
       deploy-target:
-        description: 'Make target for deployment'
-        required: true
+        # Optional (ADR-0012): components migrated to platform/apps are
+        # deployed by Argo CD, not this workflow, and pass '' here (or
+        # omit the input) to skip the deploy job entirely. Components
+        # still on this repo's own ansible layer pass their `make deploy`
+        # target as before.
+        description: 'Make target for deployment (empty/omitted to skip — component is platform-deployed)'
+        required: false
         type: string
+        default: ''
       requires-docker-login:
         description: 'Whether component requires Docker/GHCR authentication'
         required: false
