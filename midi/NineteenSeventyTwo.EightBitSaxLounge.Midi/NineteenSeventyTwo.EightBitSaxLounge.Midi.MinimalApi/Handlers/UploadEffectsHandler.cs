@@ -66,7 +66,22 @@ public class UploadEffectsHandler : IMidiEndpointHandler<IResult>
                     if (existingEffect != null)
                     {
                         _logger.LogInformation($"Updating effect: {effect.Name}");
-                        await _midiDataService.UpdateEffectByNameAsync(effect.Name, effect);
+                        // Do not persist `effect` as-is: it comes from
+                        // appsettings.Effects.json, which only ever carries
+                        // Name/Description. This config has no idea about
+                        // DeviceSettings (the per-device CC mappings that
+                        // UploadDevice separately merges in), so a blind
+                        // replace here wipes them out from under it. Update
+                        // the existing document in place instead, the same
+                        // way UploadDeviceHandler merges rather than
+                        // replaces. Re-running this endpoint after
+                        // UploadDevice previously did exactly that: it
+                        // silently deleted every DeviceSettings entry and
+                        // broke every effect that depends on one (e.g. the
+                        // dial1/dial2 chat commands, which read Control1/
+                        // Control2 off the current engine's DeviceSettings).
+                        existingEffect.Description = effect.Description;
+                        await _midiDataService.UpdateEffectByNameAsync(effect.Name, existingEffect);
                         updated++;
                         _logger.LogInformation($"Effect updated successfully: {effect.Name}");
                     }

@@ -1,4 +1,24 @@
 # Changelog
+## [4.0.5] - 2026-09-11
+
+### Fixed
+- `UploadEffects` blind-replaced each effect document with the config-file
+  version (Name + Description only), destroying any `DeviceSettings` that
+  `UploadDevice` had separately merged in. Re-running effects seeding after
+  device seeding — which the migration's data-init playbooks now do
+  routinely — silently wiped the per-device CC mappings for every engine
+  effect and broke the chat bot's `!dial1`/`!dial2` commands with no error
+  anywhere in the stack (midi returned 404 `Not Found` from `SetEffect`,
+  logging `No device settings found for dependent effect '<X>' in device
+  '<Y>'`). `!engine`/`Time`/`PreDelay` kept working because they don't read
+  a dependent effect's `DeviceSettings`. Observed live in
+  eightbitsaxlounge-dev on 2026-09-11 and fixed on the running pod by
+  re-running `UploadDevice`; this release fixes the seeding endpoint itself
+  so the fix doesn't need repeating. `UploadEffectsHandler` now updates the
+  existing document in place (preserving `DeviceSettings`) instead of
+  replacing it wholesale, matching the merge pattern `UploadDeviceHandler`
+  already used.
+
 ## [4.0.4] - 2026-09-10
 
 ### Fixed

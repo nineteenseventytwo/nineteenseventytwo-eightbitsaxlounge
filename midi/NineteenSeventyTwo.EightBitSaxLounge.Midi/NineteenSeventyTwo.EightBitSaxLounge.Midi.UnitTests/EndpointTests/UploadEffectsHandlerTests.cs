@@ -119,6 +119,56 @@ public class UploadEffectsHandlerTests : TestBase
     }
 
     [Fact]
+    public async Task UploadEffects_ExistingEffectHasDeviceSettings_PreservesThemOnUpdate()
+    {
+        // Regression test: UploadDevice merges per-device CC mappings into
+        // DeviceSettings, but appsettings.Effects.json only ever carries
+        // Name/Description. Re-running UploadEffects after UploadDevice
+        // used to blind-replace the whole document and silently delete
+        // DeviceSettings, breaking every effect that depends on one (e.g.
+        // dial1/dial2, which read Control1/Control2 off the current
+        // engine's DeviceSettings). Observed live in eightbitsaxlounge-dev
+        // on 2026-09-11.
+        // Arrange
+        var loggerMock = new Mock<ILogger<UploadEffectsHandler>>();
+        var dataServiceMock = new Mock<IMidiDataService>();
+
+        var effects = new List<Effect>
+        {
+            new() { Name = "Hall", Description = "Updated hall description" }
+        };
+
+        var effectsOptions = Options.Create(new EffectsOptions { Effects = effects });
+
+        var deviceSettings = new List<DeviceSetting>
+        {
+            new() { Name = "Control1", DeviceName = "VentrisDualReverb", EffectName = "Bass" },
+            new() { Name = "Control2", DeviceName = "VentrisDualReverb", EffectName = "Size" }
+        };
+        var existingEffects = new List<Effect>
+        {
+            new() { Name = "Hall", Description = "Old hall description", DeviceSettings = deviceSettings }
+        };
+
+        dataServiceMock.Setup(m => m.GetAllEffectsAsync()).ReturnsAsync(existingEffects);
+        dataServiceMock.Setup(m => m.UpdateEffectByNameAsync("Hall", It.IsAny<Effect>())).Returns(Task.CompletedTask);
+
+        var handler = new UploadEffectsHandler(loggerMock.Object, dataServiceMock.Object, effectsOptions);
+
+        // Act
+        var result = await handler.HandleAsync();
+        var (status, _) = await ExecuteResultAsync(result);
+
+        // Assert
+        Assert.Equal(200, status);
+        dataServiceMock.Verify(m => m.UpdateEffectByNameAsync("Hall", It.Is<Effect>(e =>
+            e.Description == "Updated hall description" &&
+            e.DeviceSettings != null &&
+            e.DeviceSettings.Count == 2 &&
+            e.DeviceSettings.Any(ds => ds.Name == "Control1" && ds.EffectName == "Bass"))), Times.Once);
+    }
+
+    [Fact]
     public async Task UploadEffects_MixedEffects_CreatesAndUpdates()
     {
         // Arrange
