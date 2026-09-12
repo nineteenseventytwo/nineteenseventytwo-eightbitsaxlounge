@@ -53,7 +53,14 @@ permissions:
 jobs:
   publish:
     name: Build, Test & Publish
-    runs-on: self-hosted
+    # GitHub-hosted, not self-hosted (Phase 6.2, docs/plan/08-eightbitsaxlounge-migration.md):
+    # this job only builds, tests and pushes a container image — no VLAN 20 or
+    # in-cluster access needed. ubuntu-24.04-arm is native arm64 (matches every
+    # image this repo builds) and free on GitHub's own infra, per
+    # cluster/arc/values-lab-dind.yaml's own comment in the platform repo:
+    # "image builds belong on GitHub-hosted ubuntu-24.04-arm runners... almost
+    # nothing should [need dind/self-hosted for this]".
+    runs-on: ubuntu-24.04-arm
     permissions:
       packages: write
       security-events: write

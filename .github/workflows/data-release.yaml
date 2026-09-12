@@ -38,5 +38,14 @@ jobs:
       component: 'data'
       test-target: 'test'
       build-target: 'build'
-      deploy-target: 'deploy'
+      # No deploy-target (ADR-0012, Phase 6.2): data was migrated to
+      # nineteenseventytwo-platform/apps/eightbitsaxlounge and is deployed
+      # by Argo CD, not this repo. `make deploy` still shells out to
+      # ansible-playbook, and the self-hosted runner doesn't have it —
+      # every run since the migration has hit `Deploy Configuration`,
+      # failed with exit 127, and marked the whole release red even
+      # though the image built, tested and published fine. Same finding
+      # already fixed for chat (#81). Omitting deploy-target skips that
+      # job (release-template.yaml treats an empty/omitted deploy-target
+      # as "component is platform-deployed").
       requires-docker-login: true

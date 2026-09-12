@@ -17,7 +17,9 @@ jobs:
   # Check if we need to build before running expensive tests
   check-artifacts:
     name: Check if Artifacts Exist
-    runs-on: self-hosted
+    # GitHub-hosted (Phase 6.2): only GitHub API calls (curl/jq), no VLAN 20
+    # or in-cluster access needed.
+    runs-on: ubuntu-24.04-arm
     outputs:
       version: ${{ steps.version.outputs.version }}
       namespace: ${{ steps.namespace.outputs.namespace }}
@@ -115,7 +117,8 @@ jobs:
 
   test:
     name: Run .NET Tests
-    runs-on: self-hosted
+    # GitHub-hosted (Phase 6.2): dotnet test, no VLAN 20 or docker needed.
+    runs-on: ubuntu-24.04-arm
     needs: [check-artifacts]
     if: needs.check-artifacts.outputs.needs-build == 'true'
     env:
@@ -146,7 +149,9 @@ jobs:
     name: Build MIDI Container
     needs: [check-artifacts, test]
     if: always() && needs.check-artifacts.outputs.needs-build-container == 'true' && (needs.test.result == 'success' || needs.test.result == 'skipped')
-    runs-on: self-hosted
+    # GitHub-hosted (Phase 6.2): docker build+push, native arm64, no VLAN 20
+    # needed — same reasoning as release-template.yaml's publish job.
+    runs-on: ubuntu-24.04-arm
     permissions:
       packages: write
       security-events: write
@@ -199,7 +204,9 @@ jobs:
     name: Build Windows PC Package
     needs: [check-artifacts, test]
     if: always() && needs.check-artifacts.outputs.needs-build-pc == 'true' && (needs.test.result == 'success' || needs.test.result == 'skipped')
-    runs-on: self-hosted
+    # GitHub-hosted (Phase 6.2): cross-compiles a win-x64 publish output —
+    # no docker, no VLAN 20, no host-specific tooling needed to build it.
+    runs-on: ubuntu-24.04-arm
     outputs:
       version: ${{ needs.check-artifacts.outputs.version }}
       needs-build: ${{ needs.check-artifacts.outputs.needs-build-pc }}
@@ -256,43 +263,19 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  # Kubernetes deployment (runs in parallel with deploy-pc after both builds complete)
-  deploy-k8s:
-    name: Deploy MIDI to Kubernetes
-    needs: [check-artifacts, build-container, test]
-    if: >-
-      always() && (
-        needs.check-artifacts.outputs.needs-build == 'false' ||
-        (needs.build-container.result == 'success' && (needs.test.result == 'success' || needs.test.result == 'skipped'))
-      )
-    runs-on: self-hosted
-    steps:
-    - name: Checkout Code
-      uses: actions/checkout@v7
+  # Kubernetes deployment: removed (Phase 6.2, 2026-09-12). This job only
+  # ever ran `make deploy-k8s`, which shells out to ansible-playbook — not
+  # present on the runner, and dead by design since midi moved to
+  # nineteenseventytwo-platform/apps/eightbitsaxlounge (ADR-0012): Argo CD
+  # deploys midi now, and racing it with a manual deploy step here was
+  # never the plan (see midi/Makefile's own deploy-k8s comment). Every run
+  # of this job failed with exit 127 and turned the whole release red even
+  # though the container built, tested and published fine — same finding
+  # already fixed for chat/db/data/state/overlay's `Deploy Configuration`
+  # job. Left deliberately broken rather than fixed sooner specifically so
+  # nobody was tempted to make it work and reintroduce the race.
 
-    - name: Deploy to Kubernetes
-      working-directory: ./midi
-      env:
-        VERSION: ${{ needs.check-artifacts.outputs.version }}
-        NEEDS_BUILD: ${{ needs.check-artifacts.outputs.needs-build-container }}
-        NAMESPACE: ${{ needs.check-artifacts.outputs.namespace }}
-        GITHUB_REPOSITORY_OWNER: ${{ github.repository_owner }}
-        AUTH_SECRET_KEY: ${{ secrets.AUTHENTICATION_SECRETKEY }}
-        AUTH_ISSUER: ${{ secrets.AUTHENTICATION_ISSUER }}
-        AUTH_AUDIENCE: ${{ secrets.AUTHENTICATION_AUDIENCE }}
-        AUTH_CLIENT_0_ID: ${{ secrets.AUTHENTICATION_CLIENTS_0_CLIENTID }}
-        AUTH_CLIENT_0_SECRET: ${{ secrets.AUTHENTICATION_CLIENTS_0_CLIENTSECRET }}
-        AUTH_CLIENT_1_ID: ${{ secrets.AUTHENTICATION_CLIENTS_1_CLIENTID }}
-        AUTH_CLIENT_1_SECRET: ${{ secrets.AUTHENTICATION_CLIENTS_1_CLIENTSECRET }}
-        CONNECTION_STRING_DEV: ${{ secrets.CONNECTIONSTRINGS_EIGHTBITSAXLOUNGEDATALAYER_DEV }}
-        CONNECTION_STRING_PROD: ${{ secrets.CONNECTIONSTRINGS_EIGHTBITSAXLOUNGEDATALAYER_PROD }}
-        DEVICE_SERVICE_URL_DEV: ${{ secrets.MIDI_DEVICE_URL_DEV }}
-        DEVICE_SERVICE_URL_PROD: ${{ secrets.MIDI_DEVICE_URL_PROD }}
-        DEVICE_BYPASS_KEY: ${{ secrets.MIDI_DEVICE_BYPASS_KEY }}
-        TOKEN_EXPIRY: ${{ secrets.AUTHENTICATION_TOKENEXPIRYINMINUTES }}
-      run: make deploy-k8s
-
-  # Windows PC deployment (runs in parallel with deploy-k8s after both builds complete)
+  # Windows PC deployment
   #
   # Matrix, not a single run: midi-pc-deploy.yaml keys its target directory,
   # NSSM service name, and port entirely off an ENVIRONMENT env var this job
