@@ -3,30 +3,19 @@
 #
 # ADR-0012 (platform repo) splits this repository's two jobs: it builds
 # images, and the platform repo owns every Kubernetes manifest that runs in
-# the cluster. So Checkov here scans what stays — Dockerfiles and workflows —
-# and does not scan the manifests under */k8s/ and server/, which are
-# transitional: they move to apps/eightbitsaxlounge/ and policy/tenants/ in
-# the platform repo, get rewritten there with PSS labels, security contexts,
-# non-default namespaces and quotas they have never had, and are scanned by
-# that repo's own lint.yml. Gating this repo on ~120 findings in files whose
-# migration is the entire point would block every PR on work that deletes
-# them.
+# the cluster. Checkov here scans what stays — Dockerfiles and workflows.
 #
-# Remove these skip-paths when server/ and */k8s/ are gone. There should be
-# nothing left for them to match.
+# `server/` and every service's own `*/k8s/` (the transitional manifests
+# that moved to apps/eightbitsaxlounge/ and policy/tenants/ in the platform
+# repo, rewritten there with PSS labels, security contexts, non-default
+# namespaces and quotas they never had here) are gone as of Phase 6.2 —
+# there is nothing left for a kubernetes-framework skip-path to match, so
+# the skip-path list and the kubernetes framework entry that only ever
+# existed to be excluded from both go together.
 directory:
   - "."
 
-# Matched with a leading slash, and checkov does not treat these as fully
-# anchored regexes — ".*/k8s/.*" parses but matches nothing, which is how an
-# earlier attempt reported the very manifests it was told to skip. Verified
-# against the CLI: these two forms take kubernetes findings to zero.
-skip-path:
-  - "/k8s/"
-  - "/server/"
-
 framework:
-  - kubernetes
   - dockerfile
   - github_actions
 

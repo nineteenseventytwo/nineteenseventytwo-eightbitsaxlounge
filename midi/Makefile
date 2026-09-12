@@ -53,7 +53,9 @@ ANSIBLE_CLUSTER_RUN = docker run --rm -i $(DOCKER_USER) \
 
 # hosts: midi-host (deploy-pc) connects to the physical Windows PC via
 # pi-to-midi-host — a static key generated once on 1972-console-1 and
-# authorized directly on the PC (server/init-pc.yaml), not a Vault-signed
+# authorized directly on the PC as a one-time setup step (the
+# playbook that did it lived in server/, retired along with the rest of
+# that layer in Phase 6.2), not a Vault-signed
 # cert, since the PC isn't part of the SSH-CA-issued Linux fleet. Same
 # copy-then-chmod treatment as ansible-console above, same reason. Also
 # needs the Windows-specific ansible collections, which aren't in the base
