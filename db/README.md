@@ -1,28 +1,21 @@
-# CouchDB Deployment Resources
+# CouchDB Build Resources
 
-This folder contains resources for building, deploying, and managing a CouchDB instance in a Kubernetes environment. It includes a Dockerfile for creating a CouchDB container image, Kubernetes manifests for deployment, and a GitHub Actions workflow and Ansible playbook for automating the build and deployment process with versioned images and host-based ingress.
+This folder builds and tests the CouchDB image this service runs. It does not own the Kubernetes manifests or deploy anything — those live in `nineteenseventytwo-platform`'s `apps/eightbitsaxlounge/`, deployed by Argo CD (ADR-0012). See that repo for the actual Deployment, PVC, Service and HTTPRoute definitions.
 
 ## Overview
 
 The resources in this folder are designed to:
 1. Build a CouchDB Docker image.
-2. Deploy the CouchDB container to a Kubernetes cluster using the provided manifests.
-3. Automate the build and deployment process using a GitHub Actions workflow.
+2. Test the built image.
+3. Publish it to GHCR via a GitHub Actions workflow, triggered by `version.txt`.
 
 ## Repository Structure
 
 - **`Dockerfile`**: Defines the steps to build a CouchDB container image.
-- **`k8s/`**: Contains Kubernetes manifests for deploying CouchDB:
-  - `deployment.yaml`: Defines the CouchDB deployment with persistent volume.
-  - `persistentvolumeclaim.yaml`: 10GB persistent volume claim for data persistence.
-  - `service.yaml`: Exposes the CouchDB deployment as a service within the cluster.
-  - `ingress.yaml.j2`: Templated Ingress (host-based) to expose CouchDB/Fauxton externally.
-- **`.github/workflows/db-release.yaml`**: A GitHub Actions workflow to automate the build, push, and deployment process.
+- **`.github/workflows/db-release.yaml`**: A GitHub Actions workflow to automate the build, test, and publish process.
   - Triggers on updates to `version.txt`
-  - Builds and pushes `ghcr.io/<owner>/eightbitsaxlounge-couchdb:<version>` and `:latest`
-  - Merging to main deploys to namespace `eightbitsaxlounge-prod`; other branches to `eightbitsaxlounge-dev`
-- **`db-couchdb.yaml`**: An Ansible playbook for deployment db components to cluster
-- **`Makefile`**: Makefile defining steps to deploy db components
+  - Builds and pushes `ghcr.io/<owner>/eightbitsaxlounge-db:<version>` and `:latest`
+- **`Makefile`**: build-image/test-image/push targets used by CI
 - **`CHANGELOG.md`**: Version history and changes
 
 ## Data Persistence
@@ -67,7 +60,7 @@ curl -i -H "Host: db-dev.<IP>.sslip.io" http://<IP>/_utils/
 
 - Image version comes from `db/version.txt`.
 - CI builds and pushes both `:latest` and `:<version>` to GHCR.
-- The Ansible playbook patches the Deployment to the exact `:<version>` tag, annotates the change cause, waits for rollout, and prints the running image.
+- Bumping the digest in `nineteenseventytwo-platform`'s `apps/eightbitsaxlounge/{dev,prod}/db-deployment.yaml` and merging is what actually rolls it out — Argo CD applies it from there.
 
 ## Test
 ```

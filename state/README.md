@@ -25,21 +25,10 @@ The state layer provides a centralized event message broker for microservice com
 
 ## Kubernetes Deployment
 
-Containerized NATS server deployed as Kubernetes StatefulSet with persistent storage. Event streams are automatically initialized at pod startup.
-
-**Deployment:**
-```bash
-make deploy     # Deploy to target namespace with version from version.txt
-```
-
-**Manual Deployment with Specific Namespace:**
-```bash
-make deploy-nats-manual   # Interactive prompts for namespace and passwords
-```
+Containerized NATS server, deployed as a Kubernetes StatefulSet with persistent storage by Argo CD from `nineteenseventytwo-platform`'s `apps/eightbitsaxlounge/{dev,prod}/state-statefulset.yaml` (ADR-0012) — this repo builds and tests the image, it does not deploy it. Event streams are automatically initialized at pod startup.
 
 **Configuration:**
-- Image: `ghcr.io/mchellmer/eightbitsaxlounge-state:<version>`
-- Deployment pattern: Static manifest with `imagePullPolicy: Always`, versioned tag updated via `kubectl set image` after apply
+- Image: `ghcr.io/nineteenseventytwo/eightbitsaxlounge-state:<version>`, pinned by digest in the platform repo
 - StatefulSet: Single replica with 30s readiness probe delay to allow bootstrap completion
 - Storage: 1Gi PersistentVolumeClaim (storageClass: longhorn) for JetStream persistence
 - Lifecycle: postStart hook runs bootstrap script to create 4 JetStream streams
@@ -79,18 +68,10 @@ In-cluster (specific namespace): eightbitsaxlounge-state-client.<namespace>.svc.
 
 **Pipeline:**
 1. Build Docker image with version tag
-2. Push to GitHub Container Registry (GHCR)
-3. Deploy to Kubernetes cluster via Ansible
-4. Apply StatefulSet and update image tag
-5. Restart pods to pull new image
+2. Test it
+3. Push to GitHub Container Registry (GHCR)
 
-**Deployment Process:**
-- Ansible playbook (`state-nats.yaml`) handles credential injection and service deployment
-- Creates `state-nats-creds` secret with 5 password environment variables from GitHub Actions secrets
-- Uses `kubectl set image` to patch versioned container tag (follows midi-api-deploy pattern)
-- Runs `kubectl rollout restart` to force pod recreation with new image
-- Waits for rollout completion (180s timeout)
-- Verifies running image matches deployed version
+Rolling out a new version means bumping the image digest in `nineteenseventytwo-platform`'s `apps/eightbitsaxlounge/{dev,prod}/state-statefulset.yaml` and merging — Argo CD applies it from there. `state-nats-creds` is an ExternalSecret against Vault (`kv/tenants/eightbitsaxlounge/state-{dev,prod}`), not a GitHub Actions secret injected by this repo's own pipeline.
 
 **Manual Build and Test:**
 ```bash

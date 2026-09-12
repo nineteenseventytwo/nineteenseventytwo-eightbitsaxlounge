@@ -36,15 +36,15 @@ jobs:
     uses: ./.github/workflows/release-template.yaml
     with:
       component: 'overlay'
-      build-target: 'build'
       # No deploy-target (ADR-0012, Phase 6.2): overlay was migrated to
       # nineteenseventytwo-platform/apps/eightbitsaxlounge and is deployed
-      # by Argo CD, not this repo. `make deploy` still shells out to
-      # ansible-playbook, and the self-hosted runner doesn't have it —
-      # every run since the migration has hit `Deploy Configuration`,
+      # by Argo CD, not this repo. `make deploy` used to shell out to
+      # ansible-playbook, and the self-hosted runner never had it —
+      # every run since the migration hit `Deploy Configuration`,
       # failed with exit 127, and marked the whole release red even
       # though the image built, tested and published fine. Same finding
-      # already fixed for chat (#81). Omitting deploy-target skips that
+      # already fixed for chat (#81); the Makefile target and playbook
+      # are gone now too (Phase 6.2). Omitting deploy-target skips that
       # job (release-template.yaml treats an empty/omitted deploy-target
       # as "component is platform-deployed").
       requires-docker-login: true

@@ -12,11 +12,6 @@ on:
         required: false
         type: string
         default: 'version.txt'
-      build-target:
-        description: 'Make target for building (e.g., build, build-image)'
-        required: false
-        type: string
-        default: 'build'
       test-target:
         description: 'Make target for testing (empty to skip)'
         required: false

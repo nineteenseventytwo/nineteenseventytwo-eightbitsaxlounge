@@ -33,10 +33,6 @@ push:
 	docker push "$(IMAGE_BASE):latest"
 	@echo "✓ Image pushed successfully"
 
-# Deploy to Kubernetes via Ansible
-deploy:
-	ansible-playbook db-couchdb.yaml
-
 # Help target
 help:
 	@echo "Available targets:"
@@ -44,12 +40,10 @@ help:
 	@echo "  build-image        - Build Docker image locally (no push)"
 	@echo "  test-image         - Verify built image exists"
 	@echo "  push               - Push image to registry"
-	@echo "  deploy             - Deploy to Kubernetes cluster"
 	@echo ""
 	@echo "Environment variables:"
 	@echo "  VERSION            - Image version (default: from version.txt)"
 	@echo "  NAMESPACE          - K8s namespace (default: eightbitsaxlounge-dev)"
 	@echo "  GITHUB_REPOSITORY_OWNER - Docker registry owner (default: mchellmer)"
-	@echo "  COUCHDB_PASSWORD   - CouchDB admin password (required for deploy)"
 
-.PHONY: test build-image test-image push deploy help
+.PHONY: test build-image test-image push help

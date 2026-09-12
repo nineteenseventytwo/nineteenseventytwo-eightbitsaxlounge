@@ -39,13 +39,6 @@ push:
 	docker push "$(IMAGE_BASE):latest"
 	@echo "✓ Image pushed successfully"
 
-# Deploy to Kubernetes via Ansible
-deploy:
-	ansible-playbook data-go-couchdb.yaml
-
-# Legacy targets for backwards compatibility
-deploy-data-api: deploy
-
 docker-build:
 	docker build -t eightbitsaxlounge-data .
 
@@ -60,12 +53,10 @@ help:
 	@echo "  build-image        - Build Docker image locally"
 	@echo "  test-image         - Verify built image exists"
 	@echo "  push               - Push image to registry"
-	@echo "  deploy             - Deploy to Kubernetes cluster"
-	@echo "  deploy-data-api    - (deprecated) Same as deploy"
 	@echo ""
 	@echo "Environment variables:"
 	@echo "  VERSION            - Image version (default: from version.txt)"
 	@echo "  NAMESPACE          - K8s namespace (default: eightbitsaxlounge-dev)"
 	@echo "  GITHUB_REPOSITORY_OWNER - Docker registry owner (default: mchellmer)"
 
-.PHONY: lint test build-image test-image push deploy deploy-data-api docker-build docker-run help
+.PHONY: lint test build-image test-image push docker-build docker-run help

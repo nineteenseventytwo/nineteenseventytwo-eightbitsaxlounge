@@ -48,10 +48,6 @@ push:
 	docker push "$(IMAGE_BASE):latest"
 	@echo "✓ Image pushed successfully"
 
-# Deploy to Kubernetes via Ansible
-deploy:
-	ansible-playbook chat-deploy.yaml
-
 # Local development targets
 install:
 	pip3 install -r requirements.txt
@@ -92,7 +88,6 @@ help:
 	@echo "  build-image        - Build Docker image locally"
 	@echo "  test-image         - Verify built image exists"
 	@echo "  push               - Push image to registry"
-	@echo "  deploy             - Deploy to Kubernetes cluster"
 	@echo ""
 	@echo "Local development:"
 	@echo "  install            - Install Python dependencies"
@@ -109,4 +104,4 @@ help:
 	@echo "  NAMESPACE          - K8s namespace (default: eightbitsaxlounge-dev)"
 	@echo "  GITHUB_REPOSITORY_OWNER - Docker registry owner (default: mchellmer)"
 
-.PHONY: lint test build-image test-image push deploy deploy-chat install install-dev dev test-local clean docker-build docker-run set-environment help
+.PHONY: lint test build-image test-image push install install-dev dev test-local clean docker-build docker-run set-environment help

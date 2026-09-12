@@ -92,8 +92,8 @@ ANSIBLE_PC_RUN = docker run --rm -i $(DOCKER_USER) \
 	$(ANSIBLE_RUNNER) \
 	sh -c 'mkdir -p "$$HOME/.ssh" && cp /tmp/pi-to-midi-host-key "$$HOME/.ssh/pi-to-midi-host" && chmod 600 "$$HOME/.ssh/pi-to-midi-host" && export ANSIBLE_PRIVATE_KEY_FILE="$$HOME/.ssh/pi-to-midi-host" && exec ansible-playbook "$$@"' --
 
-.PHONY: help lint test build-image test-image push deploy-k8s build-pc deploy-pc
-.PHONY: deploy-midi-pc deploy-midi-api docker-build data-init data-upload request-seteffect
+.PHONY: help lint test build-image test-image push build-pc deploy-pc
+.PHONY: deploy-midi-pc docker-build data-init data-upload request-seteffect
 
 help:
 	@echo "MIDI API - Build and Deployment Targets"
@@ -104,8 +104,6 @@ help:
 	@echo "  build-image       - Build Docker image locally (no push)"
 	@echo "  test-image        - Verify built image exists"
 	@echo "  push              - Push image to registry"
-	@echo "  deploy-k8s        - Legacy — superseded by platform/Argo CD, left broken"
-	@echo "                      intentionally (see midi/Makefile's own comment)"
 	@echo "  build-pc          - Build Windows self-contained binary"
 	@echo "  deploy-pc         - Deploy MIDI to Windows PC"
 	@echo "  data-init         - Initialize the MIDI datamodel (devices/effects/selectors dbs)"
@@ -147,18 +145,6 @@ push:
 	docker push "$(IMAGE_BASE):latest"
 	@echo "✓ Image pushed successfully"
 
-# NOT fixed to use the sibling-container pattern deliberately: midi's own
-# k8s Deployment/Service is now owned by platform/Argo CD (ADR-0012,
-# nineteenseventytwo-platform#154) — fixing this to actually run again
-# would race Argo CD to manage the same resources, which is actively
-# harmful, not just dead code. Left broken until eightbitsaxlounge/server
-# is fully retired (Phase 6.2), matching db/data/state's own release
-# workflows, which coexist with their own equally-dead ansible deploy
-# targets the same way.
-deploy-k8s:
-	@echo "Deploying MIDI API to Kubernetes namespace: $(NAMESPACE)..."
-	ansible-playbook midi-api-deploy.yaml -vv
-
 build-pc:
 	@echo "Building Windows self-contained binary version $(VERSION)..."
 	@mkdir -p publish
@@ -178,8 +164,6 @@ deploy-pc:
 	$(ANSIBLE_PC_RUN) midi-pc-deploy.yaml -vv
 
 deploy-midi-pc: deploy-pc
-
-deploy-midi-api: deploy-k8s
 
 data-init:
 	$(ANSIBLE_CLUSTER_RUN) midi-data-init.yaml -vv
