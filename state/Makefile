@@ -3,23 +3,24 @@ VERSION ?= $(shell cat version.txt)
 GITHUB_REPOSITORY_OWNER ?= mchellmer
 IMAGE_BASE ?= ghcr.io/$(GITHUB_REPOSITORY_OWNER)/eightbitsaxlounge-state
 
-# Validate source files and Ansible playbook
+# Validate source files
+# Not invoked by CI: release-template.yaml declares a build-target input but
+# never actually calls `make ${{ inputs.build-target }}` anywhere in its
+# body — only `make build-image` is hardcoded. state-release.yaml's own
+# `build-target: 'build'` is passed and silently ignored. Kept here for
+# local/manual use; trimmed of its state-nats.yaml/k8s/ checks (both gone,
+# Phase 6.2) rather than deleted outright, since it still validates
+# something real for anyone running it by hand.
 build:
 	@echo "Validating configuration..."
 	@test -f Dockerfile || (echo "ERROR: Dockerfile not found" && exit 1)
 	@test -f entrypoint.sh || (echo "ERROR: entrypoint.sh not found" && exit 1)
 	@test -f nats.conf.template || (echo "ERROR: nats.conf.template not found" && exit 1)
 	@test -f jetstream-bootstrap.sh || (echo "ERROR: jetstream-bootstrap.sh not found" && exit 1)
-	@test -f state-nats.yaml || (echo "ERROR: state-nats.yaml not found" && exit 1)
 	@test -f version.txt || (echo "ERROR: version.txt not found" && exit 1)
 	@grep -E '^[0-9]+\.[0-9]+\.[0-9]+$$' version.txt > /dev/null || (echo "ERROR: Invalid version format in version.txt" && exit 1)
-	@test -f k8s/service-headless.yaml || (echo "ERROR: k8s/service-headless.yaml not found" && exit 1)
-	@test -f k8s/statefulset.yaml || (echo "ERROR: k8s/statefulset.yaml not found" && exit 1)
-	@test -f k8s/service-client.yaml || (echo "ERROR: k8s/service-client.yaml not found" && exit 1)
 	@echo "✓ All required files exist"
 	@echo "✓ version.txt is valid ($(VERSION))"
-	@ansible-playbook --syntax-check state-nats.yaml > /dev/null || (echo "ERROR: Ansible syntax check failed" && exit 1)
-	@echo "✓ Ansible playbook syntax is valid"
 	@echo "All validation checks passed"
 
 # Build custom NATS image with config and bootstrap baked in
@@ -97,39 +98,6 @@ test-local-ps:
 			-e DATA_PASS=datapw \
 			$$image -c /etc/nats/nats.conf }"
 
-# Deploy NATS to Kubernetes cluster
-deploy:
-	@test -n "$$NAMESPACE" || (echo "ERROR: NAMESPACE env var not set" && exit 1)
-	@test -n "$$SYSTEM_PASS" || (echo "ERROR: SYSTEM_PASS env var not set" && exit 1)
-	@test -n "$$OVERLAY_PASS" || (echo "ERROR: OVERLAY_PASS env var not set" && exit 1)
-	@test -n "$$CHAT_PASS" || (echo "ERROR: CHAT_PASS env var not set" && exit 1)
-	@test -n "$$MIDI_PASS" || (echo "ERROR: MIDI_PASS env var not set" && exit 1)
-	@test -n "$$DATA_PASS" || (echo "ERROR: DATA_PASS env var not set" && exit 1)
-	@echo "🚀 Deploying NATS to namespace $$NAMESPACE with version $(VERSION)"
-	NAMESPACE="$$NAMESPACE" VERSION="$(VERSION)" GITHUB_REPOSITORY_OWNER="$(GITHUB_REPOSITORY_OWNER)" \
-		SYSTEM_PASS="$$SYSTEM_PASS" OVERLAY_PASS="$$OVERLAY_PASS" CHAT_PASS="$$CHAT_PASS" MIDI_PASS="$$MIDI_PASS" DATA_PASS="$$DATA_PASS" \
-		ansible-playbook state-nats.yaml
-
-# Manual deployment with interactive prompts for secrets
-deploy-nats-manual:
-	@if [ -z "$$NAMESPACE" ] || [ -z "$$SYSTEM_PASS" ] || [ -z "$$OVERLAY_PASS" ] || [ -z "$$CHAT_PASS" ] || [ -z "$$MIDI_PASS" ] || [ -z "$$DATA_PASS" ]; then \
-		echo "⚠️  Manual deployment mode: using prompts for secrets"; \
-		read -p "Enter NAMESPACE (default: eightbitsaxlounge-dev): " ns; \
-		NAMESPACE="$${ns:-eightbitsaxlounge-dev}"; \
-		read -sp "Enter SYSTEM_PASS: " system_pass; echo; \
-		read -sp "Enter OVERLAY_PASS: " overlay_pass; echo; \
-		read -sp "Enter CHAT_PASS: " chat_pass; echo; \
-		read -sp "Enter MIDI_PASS: " midi_pass; echo; \
-		read -sp "Enter DATA_PASS: " data_pass; echo; \
-		NAMESPACE="$$NAMESPACE" VERSION="$(VERSION)" GITHUB_REPOSITORY_OWNER="$(GITHUB_REPOSITORY_OWNER)" \
-			SYSTEM_PASS="$$system_pass" OVERLAY_PASS="$$overlay_pass" CHAT_PASS="$$chat_pass" MIDI_PASS="$$midi_pass" DATA_PASS="$$data_pass" \
-			ansible-playbook state-nats.yaml; \
-	else \
-		NAMESPACE="$$NAMESPACE" VERSION="$(VERSION)" GITHUB_REPOSITORY_OWNER="$(GITHUB_REPOSITORY_OWNER)" \
-			SYSTEM_PASS="$$SYSTEM_PASS" OVERLAY_PASS="$$OVERLAY_PASS" CHAT_PASS="$$CHAT_PASS" MIDI_PASS="$$MIDI_PASS" DATA_PASS="$$DATA_PASS" \
-			ansible-playbook state-nats.yaml; \
-	fi
-
 # Help
 help:
 	@echo "Available targets:"
@@ -140,14 +108,5 @@ help:
 	@echo "  push               - Push image to GHCR"
 	@echo "  test-local         - Start custom NATS image with Podman (interactive)"
 	@echo "  test-local-ps      - Start custom NATS image with Podman via PowerShell (Windows)"
-	@echo "  deploy             - Deploy NATS to Kubernetes (requires env vars)"
-	@echo "  deploy-nats-manual - Deploy NATS with interactive prompts for secrets"
-	@echo ""
-	@echo "Environment variables for deploy:"
-	@echo "  NAMESPACE          - K8s namespace (required)"
-	@echo "  OVERLAY_PASS       - Password for overlay user (required)"
-	@echo "  CHAT_PASS            - Password for chat user (required)"
-	@echo "  MIDI_PASS          - Password for midi user (required)"
-	@echo "  DATA_PASS          - Password for data user (required)"
 
-.PHONY: build build-image test-image push test test-local test-local-ps deploy deploy-nats-manual help
+.PHONY: build build-image test-image push test test-local test-local-ps help

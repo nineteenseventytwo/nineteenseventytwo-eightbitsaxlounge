@@ -72,18 +72,13 @@ curl -X DELETE http://data-dev.<IP>.sslip.io/mydb/doc123
 ## Requirements
 - CouchDB layer deployed with ClusterIP service `db-service:5984`
 - Kubernetes secret `secret-db-couchdb` containing CouchDB password
-- NGINX ingress controller installed in cluster
 
 ## Deployment
-Deploy using the provided Ansible playbook:
-```bash
-ansible-playbook data-go-couchdb.yaml
-```
+This repo builds and tests the image; it does not deploy it. Deployment is Argo CD, from `nineteenseventytwo-platform`'s `apps/eightbitsaxlounge/{dev,prod}/data-deployment.yaml` (ADR-0012).
 
 Notes on image versioning:
 - Images are tagged from `data/version.txt` during CI and pushed as both `:latest` and `:$VERSION`.
-- The Ansible playbook patches the Deployment to the exact `:$VERSION` tag and waits for rollout.
-- This ensures deterministic deploys while keeping `:latest` for convenience.
+- Rolling out a version means bumping the digest in the platform repo's manifest and merging — Argo CD applies it from there.
 
 ## Testing
 ```bash

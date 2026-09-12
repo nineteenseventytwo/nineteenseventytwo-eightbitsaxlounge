@@ -3,20 +3,21 @@ VERSION ?= $(shell cat version.txt)
 GITHUB_REPOSITORY_OWNER ?= mchellmer
 IMAGE_BASE ?= ghcr.io/$(GITHUB_REPOSITORY_OWNER)/eightbitsaxlounge-overlay
 
-# Validate source files and Ansible playbook
+# Validate source files
+# Not invoked by CI: release-template.yaml declares a build-target input but
+# never actually calls `make ${{ inputs.build-target }}` anywhere in its
+# body — only `make build-image` is hardcoded. overlay-release.yaml's own
+# `build-target: 'build'` is passed and silently ignored. Kept here for
+# local/manual use; trimmed of its overlay-deploy.yaml/k8s/ checks (both
+# gone, Phase 6.2) rather than deleted outright, since it still validates
+# something real for anyone running it by hand.
 build:
 	@echo "Validating configuration..."
 	@test -f Dockerfile || (echo "ERROR: Dockerfile not found" && exit 1)
-	@test -f overlay-deploy.yaml || (echo "ERROR: overlay-deploy.yaml not found" && exit 1)
 	@test -f version.txt || (echo "ERROR: version.txt not found" && exit 1)
 	@grep -E '^[0-9]+\.[0-9]+\.[0-9]+$$' version.txt > /dev/null || (echo "ERROR: Invalid version format in version.txt" && exit 1)
-	@test -f k8s/deployment.yaml || (echo "ERROR: k8s/deployment.yaml not found" && exit 1)
-	@test -f k8s/service.yaml || (echo "ERROR: k8s/service.yaml not found" && exit 1)
-	@test -f k8s/ingress.yaml.j2 || (echo "ERROR: k8s/ingress.yaml.j2 not found" && exit 1)
 	@echo "✓ All required files exist"
 	@echo "✓ version.txt is valid ($(VERSION))"
-	@ansible-playbook --syntax-check overlay-deploy.yaml > /dev/null || (echo "ERROR: Ansible syntax check failed" && exit 1)
-	@echo "✓ Ansible playbook syntax is valid"
 	@echo "All validation checks passed"
 
 # Build Docker image with version tag
@@ -47,26 +48,6 @@ test:
 		-w /app \
 		node:25-slim \
 		bash -c "npm ci && npm test"
-
-# Deploy overlay to Kubernetes cluster
-deploy:
-	@test -n "$$NAMESPACE" || (echo "ERROR: NAMESPACE env var not set" && exit 1)
-	@echo "🚀 Deploying overlay to namespace $$NAMESPACE with version $(VERSION)"
-	NAMESPACE="$$NAMESPACE" VERSION="$(VERSION)" GITHUB_REPOSITORY_OWNER="$(GITHUB_REPOSITORY_OWNER)" \
-		ansible-playbook overlay-deploy.yaml
-
-# Manual deployment with interactive prompts
-deploy-overlay-manual:
-	@if [ -z "$$NAMESPACE" ]; then \
-		echo "⚠️  Manual deployment mode: using prompts"; \
-		read -p "Enter NAMESPACE (default: eightbitsaxlounge-dev): " ns; \
-		NAMESPACE="$${ns:-eightbitsaxlounge-dev}"; \
-		NAMESPACE="$$NAMESPACE" VERSION="$(VERSION)" GITHUB_REPOSITORY_OWNER="$(GITHUB_REPOSITORY_OWNER)" \
-			ansible-playbook overlay-deploy.yaml; \
-	else \
-		NAMESPACE="$$NAMESPACE" VERSION="$(VERSION)" GITHUB_REPOSITORY_OWNER="$(GITHUB_REPOSITORY_OWNER)" \
-			ansible-playbook overlay-deploy.yaml; \
-	fi
 
 docker-build:
 	docker build -t eightbitsaxlounge-overlay:local .
@@ -145,4 +126,4 @@ podman-smoke:
 		-e NATS_PASS=$${NATS_PASS:-} \
 		eightbitsaxlounge-overlay:local npm run smoke
 
-.PHONY: build build-image test-image push test deploy deploy-overlay-manual docker-build docker-run smoke deps test-integration test-integration-ps test-unit test-images podman-build podman-run podman-run-ps podman-run-local podman-run-local-ps podman-smoke
+.PHONY: build build-image test-image push test docker-build docker-run smoke deps test-integration test-integration-ps test-unit test-images podman-build podman-run podman-run-ps podman-run-local podman-run-local-ps podman-smoke
