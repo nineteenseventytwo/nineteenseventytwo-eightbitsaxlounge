@@ -65,7 +65,13 @@ Each layer has detailed documentation in its respective README:
 
 ## Feature Roadmap
 Chat Layer
-- ensure dev/prod services not both accessible at once
+- ~~ensure dev/prod services not both accessible at once~~ — done, but only
+  for chat itself: it's the one layer with genuinely shared state across
+  environments (one real Twitch channel, one bot account, one EventSub
+  conduit — no such thing as a "dev channel" to isolate against). Every
+  other layer runs in both dev and prod simultaneously; only chat toggles,
+  via the "Chat Set Active Environment" GitHub Actions workflow. See
+  nineteenseventytwo-platform's apps/eightbitsaxlounge/README.md.
 - service to update obs resources
 
 Midi Layer
