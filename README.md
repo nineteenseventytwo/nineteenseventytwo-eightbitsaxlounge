@@ -10,6 +10,8 @@ A deliberately overengineered Kubernetes-based platform for live music streaming
 
 ## Architecture Overview
 
+This repository builds container images and runs their tests — it does not own any Kubernetes manifest or deploy anything itself. Every workload's actual cluster definition (Deployments, Services, NetworkPolicies, ExternalSecrets) lives in `nineteenseventytwo-platform`'s `apps/eightbitsaxlounge/`, deployed there by Argo CD ([ADR-0012](https://github.com/nineteenseventytwo/nineteenseventytwo-platform/blob/main/docs/decisions/ADR-0012-platform-owns-app-workloads.md)). This split completed in September 2026 — see that repo's `docs/plan/08-eightbitsaxlounge-migration.md` for the migration record.
+
 The system is split into layers:
 
 ### **Chat Layer** ([chat/](chat/))
@@ -24,12 +26,6 @@ Go-based data service providing a RESTful API for MIDI device configurations, pr
 ### **DB Layer** ([db/](db/))
 CouchDB instance serving as the source of truth for device configurations, presets, and application state. Ensures consistent state across CHAT, MIDI devices, and chat interactions.
 
-### **Monitoring Layer** ([monitoring/](monitoring/))
-Grafana Cloud-based observability stack with Alloy agents for comprehensive monitoring. Collects metrics, logs, and traces from all cluster components. Includes OpenCost for cost tracking and Kepler for energy monitoring.
-
-### **Server Layer** ([server/](server/))
-Ansible-based infrastructure as code managing the Kubernetes cluster across Raspberry Pi nodes and a PC. Handles cluster provisioning, configuration, deployments, and maintenance.
-
 For architectural diagrams and visual overviews, see the [diagrams/](diagrams/) folder.
 
 ### **State Layer** ([state/](state/))
@@ -42,16 +38,12 @@ Node.js-based browser overlay service for OBS broadcast integration. Subscribes 
 
 ## Infrastructure
 
-- **Kubernetes Cluster**: Self-hosted K8s cluster
-- **Hardware**: 
-  - Multiple Raspberry Pi nodes (ARM64)
-  - PC node (x86_64) for MIDI hardware connectivity
-- **CI/CD**: GitHub Actions with self-hosted runners
-- **Deployment**: Ansible playbooks + Kubernetes manifests
-- **Networking**: Ingress-nginx, MetalLB for load balancing
+- **Kubernetes Cluster**: `nineteenseventytwo-platform`'s cluster (Raspberry Pi control plane + workers, one PC for MIDI hardware connectivity) — provisioned and owned by that repo, not this one
+- **CI/CD**: GitHub Actions — hosted `ubuntu-24.04-arm` runners for build/test/publish; a self-hosted runner with VLAN 20 and Windows-PC reach only for the operations that genuinely need it (`deploy-pc`, the MIDI data-seeding workflows)
+- **Deployment**: Argo CD, from `nineteenseventytwo-platform`'s `apps/eightbitsaxlounge/`
 - **Container Registry**: GitHub Container Registry (ghcr.io)
 
-Each layer has its own build/test/deploy pipeline, with releases triggered by version.txt updates.
+Each layer has its own build/test/publish pipeline, with releases triggered by version.txt updates.
 
 ## Getting Started
 
@@ -60,8 +52,6 @@ Each layer has detailed documentation in its respective README:
 - [MIDI Layer Documentation](midi/README.md)
 - [Data Layer Documentation](data/README.md)
 - [DB Layer Documentation](db/README.md)
-- [Monitoring Layer Documentation](monitoring/README.md)
-- [Server Layer Documentation](server/README.md)
 
 ## Feature Roadmap
 Chat Layer
@@ -84,24 +74,22 @@ Data Layer
 Db layer
 - source of true state -> CHAT and device track
 
-Monitoring layer
-- vulnerabilitiesbilities
-  - logging
-
-Server layer
-- service mesh for finer tuned monitoring
-- shared ansible role for common work among layers - helm
-- delegate build and test to kubernetes
-
 CI/CD
-- linting and scanning - on a schedule and isolated to a single runner so it doesn't block build/release
 - maintain scripts separately rather than inline
 - add flags for skipping tasks e.g. only deploy config, not app etc
 
 Security
 - end to end review
-- security scanning and monitoring integrated with pipelines
-- secrets managed by ci/cd service vs ansible secrets?
+- ~~security scanning and monitoring integrated with pipelines~~ — done for
+  what this repo owns: `pr.yml`'s `security` job runs Checkov and a Trivy
+  filesystem scan on every PR. What used to be `security/`'s own hand-rolled
+  Trivy CronJob (PAT-based SARIF upload, one hardcoded image list) is now
+  superseded by `nineteenseventytwo-platform`'s `image-vuln-scan.yml` —
+  scans every unique image reference actually running cluster-wide,
+  weekly, with Slack alerting on findings. That includes every 8bsl image,
+  since they're deployed in the same cluster it enumerates.
+- secrets managed by ci/cd service vs ansible secrets — done: ExternalSecrets
+  Operator against Vault, no ansible-held secrets remain
 
 Cloud replication
 - capability to spin-up/down infrastructure outside of midi layer in AWS/Azure/gcp

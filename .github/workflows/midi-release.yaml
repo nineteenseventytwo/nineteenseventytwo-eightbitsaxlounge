@@ -334,9 +334,11 @@ jobs:
     # ansible-playbook isn't installed on this runner's own image — see
     # midi/Makefile's own comment on ANSIBLE_RUNNER/DOCKER_USER for the
     # sibling-container pattern this feeds. pi-to-midi-host is a static
-    # key already authorized directly on the PC (server/init-pc.yaml), not
-    # a Vault-signed cert, so unlike the data-seeding workflows this only
-    # needs the docker-gid step, not sign-ci.sh.
+    # key already authorized directly on the PC as a one-time setup step
+    # (the playbook that did it lived in server/, retired along with the
+    # rest of that layer in Phase 6.2), not a Vault-signed cert, so unlike
+    # the data-seeding workflows this only needs the docker-gid step, not
+    # sign-ci.sh.
     - name: Read the docker group gid
       id: dockergid
       run: |
