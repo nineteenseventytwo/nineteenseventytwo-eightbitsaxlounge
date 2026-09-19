@@ -77,9 +77,6 @@ docker-build:
 docker-run:
 	docker run --rm -it --env-file .env eightbitsaxlounge-chat:local
 
-set-environment:
-	ansible-playbook chat-set-environment.yaml
-
 # Help target
 help:
 	@echo "Available targets:"
@@ -97,11 +94,10 @@ help:
 	@echo "  clean              - Clean test artifacts"
 	@echo "  docker-build       - Build Docker image locally"
 	@echo "  docker-run         - Run Docker image locally"
-	@echo "  set-environment    - Switch active environment (dev/prod)"
 	@echo ""
 	@echo "Environment variables:"
 	@echo "  VERSION            - Image version (default: from version.txt)"
 	@echo "  NAMESPACE          - K8s namespace (default: eightbitsaxlounge-dev)"
 	@echo "  GITHUB_REPOSITORY_OWNER - Docker registry owner (default: mchellmer)"
 
-.PHONY: lint test build-image test-image push install install-dev dev test-local clean docker-build docker-run set-environment help
+.PHONY: lint test build-image test-image push install install-dev dev test-local clean docker-build docker-run help
