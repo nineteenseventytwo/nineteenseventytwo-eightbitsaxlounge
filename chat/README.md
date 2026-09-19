@@ -85,18 +85,37 @@ make docker-run
 
 ### Deployment
 
-Deployed to Kubernetes with separate dev and prod namespaces. GitHub Actions handles CI/CD on version.txt changes which triggers an ansible deployment from the cicd server to the cluster.
+Deployed to Kubernetes with separate dev and prod namespaces. This repo builds,
+tests and publishes the image on a `version.txt` change; **Argo CD deploys it**
+(platform ADR-0012). The manifests live in
+`nineteenseventytwo-platform/apps/eightbitsaxlounge/{dev,prod}/`, and the Argo
+application syncs with `selfHeal: true` — so the cluster is whatever Git says,
+and changing it any other way is reverted.
 
 **Switch Active Environment:**
-- Navigate to Actions → "Chat Set Active Environment"
-- Select dev or prod from dropdown
-- Only one environment runs at a time (prevents duplicate bot messages)
 
-**Manual Deploy:**
-```bash
-# From cicd server
-make deploy-chat
+Only one environment runs at a time, to prevent duplicate bot messages. Which
+one is expressed as the replica count in the manifests, so switching is a
+commit in the platform repo:
+
+```yaml
+# apps/eightbitsaxlounge/dev/chat-deployment.yaml
+replicas: 0        # was 1
+# apps/eightbitsaxlounge/prod/chat-deployment.yaml
+replicas: 1        # was 0
 ```
+
+Argo CD picks it up on its next sync; no dispatch and no cluster access needed.
+
+There used to be a "Chat Set Active Environment" workflow that scaled the
+Deployments directly. It was removed rather than migrated: `selfHeal: true`
+reverts anything it does, and the tenant CI credential deliberately has no
+write access to Deployments for exactly that reason. It had also been failing
+since the Argo CD migration — it shelled out to `ansible-playbook`, which the
+runner image does not carry.
+
+**Manual Deploy:** there is none, by design. The image is published here and
+deployed by Argo CD from the platform repo.
 
 ### Monitoring & Logging
 - Unified log format: `[timestamp] [Information] [chat] message correlationID=<id>`
