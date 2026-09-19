@@ -1,0 +1,9 @@
+---
+# Labels actionlint cannot know about: ARC scale set names from
+# nineteenseventytwo-platform/cluster/arc/values-*.yaml. Without this every
+# lab-deploy runs-on reads as an unknown-label error and the real findings
+# drown in it.
+self-hosted-runner:
+  labels:
+    - lab-deploy
+    - lab-dind

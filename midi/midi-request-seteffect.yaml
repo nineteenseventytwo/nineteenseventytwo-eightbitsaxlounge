@@ -3,7 +3,18 @@
 # Job instead of curling the midi service's ClusterIP directly from a node
 # (blocked by the tenant's default-deny NetworkPolicy).
 - name: Send SetEffect Request to MIDI Service
-  hosts: master
+  # Runs where Ansible is invoked, not over SSH to a cluster node. The tasks
+  # below are kubectl calls against the API, and CI now runs in-cluster on the
+  # lab-deploy ARC scale set with a namespace-scoped kubeconfig — so there is
+  # nothing left for an SSH hop to add. Dropping it removes the ansible-console
+  # key, the Vault AppRole that signed its certificate, the host docker socket
+  # and the host's /etc/ansible inventory from this workflow's dependencies.
+  #
+  # The note above still holds: the HTTP work stays inside the namespace as a
+  # Job, because a default-deny NetworkPolicy drops traffic that does not come
+  # from a pod. Running in-cluster does not change that and does not rely on it.
+  hosts: localhost
+  connection: local
   vars:
     k8s_namespace: "{{ lookup('env', 'NAMESPACE') | default('eightbitsaxlounge-dev', true) }}"
     device: "{{ lookup('env', 'DEVICE') }}"
