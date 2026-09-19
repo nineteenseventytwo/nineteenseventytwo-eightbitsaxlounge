@@ -40,6 +40,17 @@ ANSIBLE_CONSOLE_CERT ?= $(ANSIBLE_CONSOLE_KEY)-cert.pub
 # --group-add moot for that test and pointed straight at the raw mode
 # bits as the actual rule). A copy is the only way to get a 600 file the
 # client will accept.
+# RUNNER_LOCAL=1 runs ansible-playbook straight off PATH instead of spawning
+# a sibling container. That is how these targets run under the lab-deploy ARC
+# scale set, where the job itself already *is* the ansible-runner image and
+# there is no docker socket to spawn a sibling over — nor any need for the
+# ansible-console key or its certificate, because the playbooks talk to the
+# Kubernetes API directly rather than SSHing to a node to run kubectl there.
+# Same hinge, and the same reasoning, as nineteenseventytwo-platform's own
+# RUNNER_LOCAL in its Makefile.
+ifeq ($(RUNNER_LOCAL),1)
+ANSIBLE_CLUSTER_RUN = ansible-playbook
+else
 ANSIBLE_CLUSTER_RUN = docker run --rm -i $(DOCKER_USER) \
 	-e HOME=/home/ansible \
 	-v $(CURDIR):/work -w /work \
@@ -50,6 +61,7 @@ ANSIBLE_CLUSTER_RUN = docker run --rm -i $(DOCKER_USER) \
 	-e NAMESPACE -e UPLOAD_TYPE -e DEVICE -e DEVICE_EFFECT -e DEVICE_EFFECT_SETTING -e VALUE -e SELECTION \
 	$(ANSIBLE_RUNNER) \
 	sh -c 'mkdir -p "$$HOME/.ssh" && cp /tmp/ansible-console-key "$$HOME/.ssh/id_ed25519" && chmod 600 "$$HOME/.ssh/id_ed25519" && { [ -f /tmp/ansible-console-cert.pub ] && cp /tmp/ansible-console-cert.pub "$$HOME/.ssh/id_ed25519-cert.pub" || true; } && export ANSIBLE_PRIVATE_KEY_FILE="$$HOME/.ssh/id_ed25519" && exec ansible-playbook "$$@"' --
+endif
 
 # hosts: midi-host (deploy-pc) connects to the physical Windows PC via
 # pi-to-midi-host — a static key generated once on 1972-console-1 and

@@ -52,7 +52,19 @@ permissions:
 jobs:
   set-effect:
     name: Set MIDI Effect
-    runs-on: self-hosted
+    # ARC scale set in the cluster, not the compose runners on
+    # 1972-console-1 — platform ADR-0006's exit, which is what stops one Pi
+    # being a single point of failure for the whole org's CI.
+    runs-on: lab-deploy
+    # lab-deploy runs the stock actions-runner: no Ansible, no kubectl. Both
+    # arrive as the job container. Pinned rather than :stable deliberately: a
+    # job container is pulled IfNotPresent, so a node already holding a
+    # mutable tag keeps serving old layers after a promote, indefinitely.
+    # See nineteenseventytwo-platform#186.
+    container:
+      image: ghcr.io/nineteenseventytwo/ansible-runner:1.2.0
+    env:
+      RUNNER_LOCAL: "1"
     defaults:
       run:
         working-directory: ./midi
@@ -63,33 +75,59 @@ jobs:
       - name: Set Namespace Based on Environment
         run: |
           if [[ "${{ github.event.inputs.environment }}" == "prod" ]]; then
-            echo "NAMESPACE=eightbitsaxlounge-prod" >> $GITHUB_ENV
+            echo "NAMESPACE=eightbitsaxlounge-prod" >> "$GITHUB_ENV"
           else
-            echo "NAMESPACE=eightbitsaxlounge-dev" >> $GITHUB_ENV
+            echo "NAMESPACE=eightbitsaxlounge-dev" >> "$GITHUB_ENV"
           fi
 
-      # See midi-data-init.yml for why this step and the docker-gid one
-      # below exist — same sibling-container-over-shared-docker-socket
-      # pattern documented there.
-      - name: Read the docker group gid
-        id: dockergid
-        run: |
-          echo "value=$(stat -c %g /var/run/docker.sock)" >> "$GITHUB_OUTPUT"
-
-      - name: Sign a fresh SSH certificate for this run
+      # Replaces the docker-gid read and the SSH-certificate signing these
+      # workflows used to do. Both existed only to reach the cluster the long
+      # way round: spawn a sibling container over the host docker socket, SSH
+      # into 1972-master-1 as ansible-console, and run kubectl there. Running
+      # in-cluster the API is simply reachable, so the socket, the SSH key,
+      # the Vault AppRole and the host's /etc/ansible inventory all stop being
+      # needed at once.
+      #
+      # The credential is the namespace-scoped eightbitsaxlounge-ci
+      # ServiceAccount that platform's policy/tenants/eightbitsaxlounge.yaml
+      # already declares — it may manage Jobs and read ConfigMaps in one
+      # namespace and nothing else.
+      - name: Stage the tenant kubeconfig
+        shell: bash
         env:
-          VAULT_ADDR: https://vault.eightbitsaxlounge.com
-        run: ../bootstrap/ssh/sign-ci.sh
+          KUBECONFIG_DEV: ${{ secrets.KUBECONFIG_DEV }}
+          KUBECONFIG_PROD: ${{ secrets.KUBECONFIG_PROD }}
+        run: |
+          set -euo pipefail
+          install -d -m 700 "$RUNNER_TEMP/kube"
+          if [ "${{ github.event.inputs.environment }}" = "prod" ]; then
+            printf '%s' "$KUBECONFIG_PROD" > "$RUNNER_TEMP/kube/config"
+          else
+            printf '%s' "$KUBECONFIG_DEV" > "$RUNNER_TEMP/kube/config"
+          fi
+          chmod 600 "$RUNNER_TEMP/kube/config"
+          [ -s "$RUNNER_TEMP/kube/config" ] || { echo "kubeconfig secret is empty" >&2; exit 1; }
 
       - name: Run Set Effect
+        shell: bash
+        env:
+          NAMESPACE: ${{ env.NAMESPACE }}
+        # $RUNNER_TEMP, not the runner.temp expression: an expression is
+        # evaluated by the runner and yields the runner's own path, while
+        # inside this container the same directory is mounted at /__w/_temp.
+        # The env var is the one the runner rewrites per container, so it is
+        # what agrees with the staging step above.
         run: |
+          set -euo pipefail
+          export KUBECONFIG="$RUNNER_TEMP/kube/config"
           make request-seteffect \
             DEVICE="${{ github.event.inputs.device }}" \
             DEVICE_EFFECT="${{ github.event.inputs.device_effect }}" \
             DEVICE_EFFECT_SETTING="${{ github.event.inputs.device_effect_setting }}" \
             VALUE="${{ github.event.inputs.value }}" \
             SELECTION="${{ github.event.inputs.selection }}"
-        env:
-          NAMESPACE: ${{ env.NAMESPACE }}
-          DOCKER_GID: ${{ steps.dockergid.outputs.value }}
-          ANSIBLE_CONSOLE_CERT: ${{ runner.temp }}/ansible-console-cert.pub
+
+      - name: Shred the staged credential
+        if: always()
+        shell: bash
+        run: rm -rf "$RUNNER_TEMP/kube"
