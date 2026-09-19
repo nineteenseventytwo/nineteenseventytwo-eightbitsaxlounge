@@ -1,6 +1,16 @@
 ---
+# Runs where Ansible is invoked, not over SSH to a cluster node. The tasks
+# below are kubectl calls against the API, and CI now runs in-cluster on the
+# lab-deploy ARC scale set with a namespace-scoped kubeconfig — so there is
+# nothing left for an SSH hop to add. Dropping it removes the ansible-console
+# key, the Vault AppRole that signed its certificate, the host docker socket
+# and the host's /etc/ansible inventory from this workflow's dependencies.
+#
+# A local run still works the same way: point KUBECONFIG at a context with
+# rights in the target namespaces.
 - name: Switch Active Chat Bot Environment
-  hosts: master
+  hosts: localhost
+  connection: local
   tasks:
     - name: Ensure required environment variables are provided
       ansible.builtin.assert:

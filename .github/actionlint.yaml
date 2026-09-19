@@ -1,0 +1,10 @@
+---
+# Labels actionlint cannot know about: ARC scale set names from
+# nineteenseventytwo-platform/cluster/arc/values-*.yaml, plus the compose
+# stack's own. Without this every self-hosted runs-on in this repo is an
+# error and the real findings drown in it.
+self-hosted-runner:
+  labels:
+    # ARC scale sets, in-cluster. ADR-0006's exit.
+    - lab-deploy
+    - lab-dind

@@ -18,43 +18,80 @@ permissions:
 jobs:
   switch-environment:
     name: Switch Active Chat Environment
-    runs-on: self-hosted
+    # ARC scale set in the cluster, not the compose runners on
+    # 1972-console-1 — ADR-0006's exit, which is what stops one Pi being a
+    # single point of failure for the whole org's CI.
+    runs-on: lab-deploy
+    # lab-deploy runs the stock actions-runner: no Ansible, no kubectl. Both
+    # arrive as the job container instead. Pinned rather than :stable
+    # deliberately: a job container is pulled IfNotPresent, so a node that
+    # already holds a mutable tag keeps serving the old layers after a
+    # promote, indefinitely. See nineteenseventytwo-platform#186, where that
+    # cost a day of chasing a fix that was already published.
+    container:
+      image: ghcr.io/nineteenseventytwo/ansible-runner:1.2.0
     steps:
     - name: Checkout Code
       uses: actions/checkout@v7
 
     - name: Set Environment Variables
+      shell: bash
       run: |
-        echo "ACTIVE_ENV=${{ github.event.inputs.environment }}" >> $GITHUB_ENV
+        echo "ACTIVE_ENV=${{ github.event.inputs.environment }}" >> "$GITHUB_ENV"
         if [[ "${{ github.event.inputs.environment }}" == "prod" ]]; then
-          echo "ACTIVE_NAMESPACE=eightbitsaxlounge-prod" >> $GITHUB_ENV
-          echo "INACTIVE_NAMESPACE=eightbitsaxlounge-dev" >> $GITHUB_ENV
+          echo "ACTIVE_NAMESPACE=eightbitsaxlounge-prod" >> "$GITHUB_ENV"
+          echo "INACTIVE_NAMESPACE=eightbitsaxlounge-dev" >> "$GITHUB_ENV"
         else
-          echo "ACTIVE_NAMESPACE=eightbitsaxlounge-dev" >> $GITHUB_ENV
-          echo "INACTIVE_NAMESPACE=eightbitsaxlounge-prod" >> $GITHUB_ENV
+          echo "ACTIVE_NAMESPACE=eightbitsaxlounge-dev" >> "$GITHUB_ENV"
+          echo "INACTIVE_NAMESPACE=eightbitsaxlounge-prod" >> "$GITHUB_ENV"
         fi
 
-    # See midi-data-init.yml for why this step and the SSH-cert one below
-    # exist — same sibling-container-over-shared-docker-socket pattern
-    # documented there. This workflow predates that fix (never carried it
-    # over when midi's own data-* workflows got it), which is why it never
-    # actually worked against the platform cluster.
-    - name: Read the docker group gid
-      id: dockergid
-      run: |
-        echo "value=$(stat -c %g /var/run/docker.sock)" >> "$GITHUB_OUTPUT"
-
-    - name: Sign a fresh SSH certificate for this run
+    # Replaces the docker-gid read and the SSH-certificate signing this
+    # workflow used to do. Both existed only to reach the cluster the long
+    # way round: spawn a sibling container over the host docker socket, SSH
+    # into 1972-master-1 as ansible-console, and run kubectl there. Running
+    # in-cluster, the API is simply reachable, so the socket, the SSH key,
+    # the Vault AppRole and the host's /etc/ansible inventory all stop being
+    # needed at once.
+    #
+    # The credential is the namespace-scoped eightbitsaxlounge-ci
+    # ServiceAccount that policy/tenants/eightbitsaxlounge.yaml already
+    # declares, published to Vault by that repo's
+    # bootstrap/tenant-kubeconfig/generate.sh. It can manage Jobs and
+    # ConfigMaps in one namespace and nothing else — a long way from a key
+    # that can root every node.
+    - name: Stage the tenant kubeconfig
+      shell: bash
       env:
-        VAULT_ADDR: https://vault.eightbitsaxlounge.com
-      run: ../bootstrap/ssh/sign-ci.sh
+        KUBECONFIG_DEV: ${{ secrets.KUBECONFIG_DEV }}
+        KUBECONFIG_PROD: ${{ secrets.KUBECONFIG_PROD }}
+      run: |
+        set -euo pipefail
+        install -d -m 700 "$RUNNER_TEMP/kube"
+        if [ "${{ github.event.inputs.environment }}" = "prod" ]; then
+          printf '%s' "$KUBECONFIG_PROD" > "$RUNNER_TEMP/kube/config"
+        else
+          printf '%s' "$KUBECONFIG_DEV" > "$RUNNER_TEMP/kube/config"
+        fi
+        chmod 600 "$RUNNER_TEMP/kube/config"
+        [ -s "$RUNNER_TEMP/kube/config" ] || { echo "kubeconfig secret is empty" >&2; exit 1; }
 
     - name: Switch Chat Environment via Ansible
       working-directory: ./chat
+      shell: bash
       env:
         ACTIVE_NAMESPACE: ${{ env.ACTIVE_NAMESPACE }}
         INACTIVE_NAMESPACE: ${{ env.INACTIVE_NAMESPACE }}
         ACTIVE_ENV: ${{ env.ACTIVE_ENV }}
-        DOCKER_GID: ${{ steps.dockergid.outputs.value }}
-        ANSIBLE_CONSOLE_CERT: ${{ runner.temp }}/ansible-console-cert.pub
-      run: make set-environment
+        # $RUNNER_TEMP, not the runner.temp expression: the expression is
+        # evaluated by the runner and yields the runner's own path, while
+        # inside this container the same directory is mounted at /__w/_temp.
+      run: |
+        set -euo pipefail
+        export KUBECONFIG="$RUNNER_TEMP/kube/config"
+        make set-environment
+
+    - name: Shred the staged credential
+      if: always()
+      shell: bash
+      run: rm -rf "$RUNNER_TEMP/kube"
