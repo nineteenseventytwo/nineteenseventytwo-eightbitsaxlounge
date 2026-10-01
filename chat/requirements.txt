@@ -6,11 +6,11 @@ python-dotenv==1.2.3
 pydantic==2.13.5
 pydantic-settings==2.15.0
 asyncio-mqtt==0.16.2
-nats-py==2.15.0
+nats-py==2.16.0
 
 # Testing dependencies (optional - use requirements-dev.txt for development)
 pytest==9.1.1
 pytest-asyncio==1.4.0
-pytest-mock==3.15.1
+pytest-mock==3.16.0
 pytest-cov==7.1.0
 aioresponses==0.7.9
