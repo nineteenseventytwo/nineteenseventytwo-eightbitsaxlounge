@@ -1,4 +1,4 @@
-FROM node:26-slim@sha256:7c5f089e6b6687fd18cd92ab523a34ccf85d0bbde5543acec6f4fd4c2d5dce68
+FROM node:26-slim@sha256:ec7758ee051e457b468b32bde57b0879010b325bb9862718e9615225ce4aaae1
 # The base image already ships a `node` user at uid/gid 1000 for exactly
 # this — confirmed live rather than assumed, since a naive `useradd -u 1000`
 # collides with it (exit 4, UID already in use).

@@ -1,5 +1,5 @@
 # Build stage
-FROM golang:1.27-alpine@sha256:cf6fca6641884b8433441b2b0652976f975e1d0fdd26d177eaaf8596087f3125 AS builder
+FROM golang:1.27-alpine@sha256:8a5910f31396cd4d89662f56c68b3ae31d374308270a1c3bd96672ee5ed43414 AS builder
 WORKDIR /app
 COPY . .
 RUN go build -o api
@@ -9,7 +9,7 @@ RUN go build -o api
 # image this Dockerfile produces today is not the image it produces next
 # month, and Dependabot (docker ecosystem, .github/dependabot.yml) is what
 # now moves this pin forward deliberately instead of silently.
-FROM alpine:3.22@sha256:14358309a308569c32bdc37e2e0e9694be33a9d99e68afb0f5ff33cc1f695dce
+FROM alpine:3.24@sha256:294b683cb724975bec92580e1e685676bd4b50bda910ddb8c51d4cabeaec77e6
 RUN addgroup -g 1000 app && adduser -D -u 1000 -G app app
 WORKDIR /app
 COPY --from=builder /app/api .
