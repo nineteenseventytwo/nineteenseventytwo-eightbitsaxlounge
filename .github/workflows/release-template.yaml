@@ -144,6 +144,21 @@ jobs:
           echo "🔍 Verifying built image"
           make test-image
 
+      # Scanned before the push, so a vulnerable image is never published.
+      # Same bar as the platform repo's weekly image-vuln-scan.yml — critical,
+      # fixable only — so the release gate and the scan agree on what counts.
+      # Without this, the first scan of an image was the weekly one, after it
+      # was already deployed.
+      - name: Scan Image (Trivy)
+        if: steps.check-artifact.outputs.needs-build == 'true'
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: ghcr.io/${{ github.repository_owner }}/eightbitsaxlounge-${{ inputs.component }}:${{ steps.version.outputs.version }}
+          severity: CRITICAL
+          ignore-unfixed: true
+          exit-code: "1"
+          format: table
+
       - name: Re-authenticate before push (prevent concurrent pipeline conflicts)
         if: inputs.requires-docker-login && steps.check-artifact.outputs.needs-build == 'true'
         uses: docker/login-action@v4
