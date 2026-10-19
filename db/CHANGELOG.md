@@ -1,4 +1,11 @@
 # Changelog
+## [2.0.5] - 2026-10-19
+
+### Security
+- `couchdb:3.5` re-pinned to the 2026-10-13 digest for Debian's `perl-base`
+  5.40.1-6+deb13u1 (CVE-2026-13221, CVE-2026-42496, CVE-2026-8376 — the
+  image's three critical findings).
+
 ## [2.0.4] - 2026-09-08
 
 ### Changed

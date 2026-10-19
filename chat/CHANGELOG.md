@@ -1,5 +1,13 @@
 # Changelog
 
+## [7.0.4] - 2026-10-19
+
+### Security
+- Base image moved from the unpinned `python:3.14.7-slim` to
+  `python:3.14-slim` (3.14.8) pinned by digest. Picks up Debian's
+  `perl-base` 5.40.1-6+deb13u1 (CVE-2026-13221, CVE-2026-42496,
+  CVE-2026-8376 — the image's three critical findings).
+
 ## [7.0.2] - 2026-09-10
 
 ### Fixed

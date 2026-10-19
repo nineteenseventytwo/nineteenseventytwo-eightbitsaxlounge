@@ -2,7 +2,7 @@
 #
 # Pinned to 3.5 plus a digest, not `latest` (CKV_DOCKER_7) — Dependabot
 # (.github/dependabot.yml, docker ecosystem) moves this forward deliberately.
-FROM couchdb:3.5@sha256:8cf5f8442585c346d2717ff0ad95605731d2f19f67b8367840baa8d3b24ebc31
+FROM couchdb:3.5@sha256:3611ce43bd32fe2368997fd41ec6e7270ec8d84aa5fc13c9828e5b15fd6bafe8
 
 # Expose the default CouchDB port
 EXPOSE 5984

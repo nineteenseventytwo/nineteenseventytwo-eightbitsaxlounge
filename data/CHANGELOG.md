@@ -1,5 +1,11 @@
 # Changelog
 
+## [2.0.3] - 2026-10-19
+
+### Security
+- Releases the base bump from #88, which changed the Dockerfile but bumped no
+  version: `golang:1.27-alpine` re-pinned, runtime `alpine` 3.22 → 3.24.
+
 ## [2.0.2] - 2026-09-09
 
 ### Fixed
