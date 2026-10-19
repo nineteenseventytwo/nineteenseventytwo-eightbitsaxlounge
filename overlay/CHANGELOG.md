@@ -1,5 +1,19 @@
 # Changelog
 
+## [4.0.2] - 2026-10-19
+
+### Security
+- Lockfile refreshed with `npm audit fix`: `proxy-addr` 2.0.8 (critical,
+  IP spoofing via IPv4-mapped IPv6 trust subnets), `socket.io-parser` 4.2.7
+  (two high memory-exhaustion advisories), and fixed `body-parser`, `qs` and
+  `brace-expansion`. `npm audit --omit=dev` is clean.
+- Base image re-pinned to the 2026-10-14 `node:26-slim` digest, for Debian's
+  `perl-base` fix (CVE-2026-13221, CVE-2026-42496, CVE-2026-8376).
+
+### Known
+- `sprintf-js` (moderate) remains, reachable only through jest's coverage
+  tooling. It is a dev dependency, not in the image, and has no fixed release.
+
 ## [4.0.1] - 2026-09-10
 
 ### Changed
