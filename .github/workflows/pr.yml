@@ -30,6 +30,34 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0   # the release guard diffs against the base branch
+
+      # -- release guard -----------------------------------------------------
+      # A service only publishes when its version.txt changes (each
+      # *-release.yaml filters on that path), so a PR that changes what ships
+      # in an image without bumping it merges and then does nothing. #88 was
+      # exactly that: Dependabot re-pinned four base images, merged, and none
+      # reached the cluster until a later hand bump. On a Dependabot PR this
+      # fails on purpose; push a version bump and a CHANGELOG line to its
+      # branch. Tests, docs and the changelog alone do not need a release.
+      - name: release guard — shipped changes bump version.txt
+        if: github.event_name == 'pull_request'
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+        run: |
+          fail=0
+          for c in chat data db midi overlay state; do
+            shipped=$(git diff --name-only "$BASE"...HEAD -- "$c/" \
+              | grep -v -E "^$c/(tests?/|.*\.md$|version\.txt$)" || true)
+            [ -z "$shipped" ] && continue
+            if ! git diff --name-only "$BASE"...HEAD -- "$c/version.txt" | grep -q .; then
+              echo "::error file=$c/version.txt::$c changes what ships in its image but does not bump $c/version.txt, so merging publishes nothing:"
+              echo "$shipped" | sed 's/^/  /'
+              fail=1
+            fi
+          done
+          exit $fail
 
       # -- chat: Python ------------------------------------------------------
       - uses: actions/setup-python@v7
