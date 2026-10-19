@@ -18,10 +18,10 @@
   "dependencies": {
     "express": "^5.2.1",
     "nats": "^2.29.3",
-    "socket.io": "^4.8.3"
+    "socket.io": "^4.8.4"
   },
   "devDependencies": {
-    "jest": "^30.5.1",
-    "jest-environment-jsdom": "^30.5.1"
+    "jest": "^30.5.2",
+    "jest-environment-jsdom": "^30.5.2"
   }
 }
