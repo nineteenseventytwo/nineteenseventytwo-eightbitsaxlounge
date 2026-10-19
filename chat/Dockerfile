@@ -1,4 +1,6 @@
-FROM python:3.14.7-slim
+# Pinned by digest (CKV_DOCKER_7), like the other services. 3.14-slim was
+# 3.14.8 when pinned; Dependabot's docker ecosystem moves it forward.
+FROM python:3.14-slim@sha256:a2b82f3c48559aa0a8446d9af49826b6e2b2016f4cd2afabfe6013ec53729170
 
 WORKDIR /app
 

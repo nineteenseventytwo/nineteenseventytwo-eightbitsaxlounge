@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.0.24] - 2026-10-19
+
+### Security
+- Releases the base bump from #88: `nats` 2.14.6 → 2.15.0 and `nats-box`
+  0.14.5 → 0.20.0. The running image still carries nats-server 2.10.18 built
+  with Go 1.22.6 (CVE-2025-30215, CVE-2025-68121 — both critical); #88
+  changed the Dockerfile but bumped no version, so nothing was published.
+
 ## [0.0.23] - 2026-09-09
 
 ### Fixed
