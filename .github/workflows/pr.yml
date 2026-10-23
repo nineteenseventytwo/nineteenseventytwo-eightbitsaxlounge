@@ -40,7 +40,10 @@ jobs:
       # exactly that: Dependabot re-pinned four base images, merged, and none
       # reached the cluster until a later hand bump. On a Dependabot PR this
       # fails on purpose; push a version bump and a CHANGELOG line to its
-      # branch. Tests, docs and the changelog alone do not need a release.
+      # branch. Tests, docs and the changelog alone do not need a release,
+      # and neither does files/ - overlay/files/ holds OBS and GIMP assets for
+      # the streaming PC, and no Dockerfile copies a files/ directory. If one
+      # ever does, take files/ out of the exclusion below.
       - name: release guard — shipped changes bump version.txt
         if: github.event_name == 'pull_request'
         env:
@@ -49,7 +52,7 @@ jobs:
           fail=0
           for c in chat data db midi overlay state; do
             shipped=$(git diff --name-only "$BASE"...HEAD -- "$c/" \
-              | grep -v -E "^$c/(tests?/|.*\.md$|version\.txt$)" || true)
+              | grep -v -E "^$c/(tests?/|files/|.*\.md$|version\.txt$)" || true)
             [ -z "$shipped" ] && continue
             if ! git diff --name-only "$BASE"...HEAD -- "$c/version.txt" | grep -q .; then
               echo "::error file=$c/version.txt::$c changes what ships in its image but does not bump $c/version.txt, so merging publishes nothing:"
@@ -122,12 +125,29 @@ jobs:
           pip install checkov==3.3.16
           checkov --config-file .checkov.yaml --compact
 
-      - name: Trivy filesystem scan (vulnerabilities and secrets)
+      # Secrets block, at every severity. A Twitch stream key sat in
+      # overlay/files/obs/profiles/.../service.json from 2026-03-12 until it
+      # was found and reset on 2026-10-23 - this step existed the whole time,
+      # but advisory (exit-code 0) and filtered to HIGH,CRITICAL, and Trivy
+      # rated that key MEDIUM (it matched a GoCardless-token rule). A secret
+      # has no acceptable severity, so no filter here.
+      - name: Trivy secret scan (blocking)
         uses: aquasecurity/trivy-action@v0.36.0
         with:
           scan-type: fs
           scan-ref: .
-          scanners: vuln,secret
+          scanners: secret
+          exit-code: "1"
+          format: table
+
+      # Vulnerabilities stay advisory: the dependency backlog is Dependabot's
+      # and the release-time image scan's job, not every PR's.
+      - name: Trivy vulnerability scan (advisory)
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          scanners: vuln
           severity: HIGH,CRITICAL
           exit-code: "0"
           format: table
