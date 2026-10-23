@@ -122,12 +122,29 @@ jobs:
           pip install checkov==3.3.16
           checkov --config-file .checkov.yaml --compact
 
-      - name: Trivy filesystem scan (vulnerabilities and secrets)
+      # Secrets block, at every severity. A Twitch stream key sat in
+      # overlay/files/obs/profiles/.../service.json from 2026-03-12 until it
+      # was found and reset on 2026-10-23 - this step existed the whole time,
+      # but advisory (exit-code 0) and filtered to HIGH,CRITICAL, and Trivy
+      # rated that key MEDIUM (it matched a GoCardless-token rule). A secret
+      # has no acceptable severity, so no filter here.
+      - name: Trivy secret scan (blocking)
         uses: aquasecurity/trivy-action@v0.36.0
         with:
           scan-type: fs
           scan-ref: .
-          scanners: vuln,secret
+          scanners: secret
+          exit-code: "1"
+          format: table
+
+      # Vulnerabilities stay advisory: the dependency backlog is Dependabot's
+      # and the release-time image scan's job, not every PR's.
+      - name: Trivy vulnerability scan (advisory)
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          scanners: vuln
           severity: HIGH,CRITICAL
           exit-code: "0"
           format: table
