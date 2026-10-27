@@ -1,4 +1,14 @@
 # Changelog
+## [4.0.6] - 2026-10-27
+
+### Security
+- Runtime moved from ASP.NET Core 10.0.12 to **10.0.13**, fixing two critical
+  CVEs in `Microsoft.AspNetCore.App.Runtime` (CVE-2026-88092,
+  CVE-2026-70188), found by the platform's weekly image scan.
+- Both Dockerfile stages are now pinned by digest (SDK 10.0.402, ASP.NET
+  10.0.13) instead of floating on `10.0`. Which runtime shipped used to depend
+  on when the image happened to be built.
+
 ## [4.0.5] - 2026-09-11
 
 ### Fixed
