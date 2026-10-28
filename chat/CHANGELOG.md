@@ -1,5 +1,15 @@
 # Changelog
 
+## [7.0.5] - 2026-10-28
+
+### Security
+- `aiohttp` 3.14.3 → 3.14.4 (released 2026-10-05). Fixes the eight
+  advisories against 3.14.3, among them request smuggling in the
+  pure-Python parser (GHSA-pqxq-w44r-73xw), no initial request timeout on
+  the server (GHSA-5wr8-gcqf-gqf3) and multipart file-descriptor
+  exhaustion (GHSA-9xw5-w5jj-pvcg). The health server and the Twitch and
+  midi clients all use it.
+
 ## [7.0.4] - 2026-10-19
 
 ### Security
