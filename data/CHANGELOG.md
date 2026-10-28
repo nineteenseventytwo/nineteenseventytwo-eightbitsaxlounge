@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.0.4] - 2026-10-28
+
+### Security
+- `github.com/go-chi/chi/v5` 5.2.5 → 5.4.0 (released 2026-10-12). Clears
+  four IP-spoofing advisories in chi's `RealIP` and `ClientIPFromXFF`
+  middleware (GHSA-j6qf-3m9c-vwj3, GO-2026-5774/5775/5777). This service
+  does not use either middleware, so it was not exposed.
+
 ## [2.0.3] - 2026-10-19
 
 ### Security
