@@ -31,13 +31,13 @@
                 <mxCell id="11" style="edgeStyle=none;html=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;" edge="1" parent="1" source="10" target="5">
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
-                <mxCell id="10" value="&lt;div&gt;&lt;span style=&quot;background-color: transparent;&quot;&gt;&lt;font color=&quot;#000000&quot;&gt;Ingress&lt;/font&gt;&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;background-color: transparent;&quot;&gt;&lt;font color=&quot;#000000&quot;&gt;nginx&lt;/font&gt;&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&amp;lt;db endpoint&amp;gt;/&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                <mxCell id="10" value="no external route&#10;admin UI: make port-forward&#10;(platform) to 5984" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
                     <mxGeometry x="360" y="190" width="120" height="60" as="geometry"/>
                 </mxCell>
                 <mxCell id="15" value="" style="edgeStyle=none;html=1;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="12" target="10">
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
-                <mxCell id="12" value="&lt;div&gt;&lt;font color=&quot;#000000&quot;&gt;service layer&lt;/font&gt;&lt;/div&gt;&lt;div&gt;metallb&lt;/div&gt;&lt;div&gt;loadbalaancer ip&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                <mxCell id="12" value="platform NetworkPolicy:&#10;ingress from data on 5984 only" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
                     <mxGeometry x="360" y="370" width="120" height="60" as="geometry"/>
                 </mxCell>
                 <mxCell id="14" value="" style="edgeStyle=none;html=1;" edge="1" parent="1" source="13" target="12">
@@ -46,7 +46,7 @@
                 <mxCell id="13" value="&lt;div&gt;&lt;font color=&quot;#000000&quot;&gt;REST Client&lt;/font&gt;&lt;/div&gt;&lt;div&gt;&lt;font color=&quot;#000000&quot;&gt;http&lt;/font&gt;&lt;/div&gt;&lt;div&gt;&lt;font color=&quot;#000000&quot;&gt;couchdb admin ui&lt;/font&gt;&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
                     <mxGeometry x="540" y="370" width="120" height="60" as="geometry"/>
                 </mxCell>
-                <mxCell id="16" value="The db layer persists an instance of a couchdb database. The data layer is configured to make standard CRUD changes to data, an ingress is setup to allow access to the couchdb admin ui." style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;" vertex="1" parent="1">
+                <mxCell id="16" value="The db layer persists an instance of a couchdb database. Only the data layer reaches it (platform NetworkPolicy, 5984); the admin UI is reached with kubectl port-forward rather than an ingress.&#10;&#10;Since 2026-10-27 it runs with a read-only root filesystem: an init container seeds /opt/couchdb/etc into an emptyDir and gives Erlang a cookie in vm.args. Deployed from nineteenseventytwo-platform apps/eightbitsaxlounge." style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;" vertex="1" parent="1">
                     <mxGeometry x="40" y="10" width="680" height="50" as="geometry"/>
                 </mxCell>
             </root>
