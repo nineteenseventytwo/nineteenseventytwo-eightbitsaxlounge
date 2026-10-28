@@ -4,6 +4,9 @@
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
+        <mxCell id="supersededBanner" value="SUPERSEDED. The platform repo now builds and runs all of this (ADR-0012): Cilium, not Flannel; Gateway API on .241, not ingress-nginx; Argo CD reconciling apps/eightbitsaxlounge; Vault, Prometheus, Falco and the rest.&#10;See nineteenseventytwo-platform/diagrams/architecture.drawio. This repo&#x27;s server/ directory is due for deletion (platform docs/plan/07, done-list item 1)." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=12;fontStyle=1;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="0" y="-140" width="900" height="110" as="geometry" />
+        </mxCell>
                 <mxCell id="2" value="raspberry pi - ubuntu" style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;" parent="1" vertex="1">
                     <mxGeometry x="40" y="161" width="350" height="579" as="geometry"/>
                 </mxCell>

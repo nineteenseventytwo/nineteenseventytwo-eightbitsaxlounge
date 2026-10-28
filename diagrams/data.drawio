@@ -19,7 +19,7 @@
                 <mxCell id="9" style="edgeStyle=none;html=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="5" target="6" edge="1">
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
-                <mxCell id="5" value="Ingress&lt;div&gt;nginx&lt;/div&gt;&lt;div&gt;/*&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                <mxCell id="5" value="no external route&#10;ClusterIP only — reach it with&#10;make port-forward (platform)" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
                     <mxGeometry x="210" y="220" width="120" height="60" as="geometry"/>
                 </mxCell>
                 <mxCell id="10" style="edgeStyle=none;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="6" target="3" edge="1">
@@ -40,10 +40,10 @@
                 <mxCell id="16" style="edgeStyle=none;html=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="14" target="5" edge="1">
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
-                <mxCell id="14" value="service layer&lt;div&gt;metallb&lt;/div&gt;&lt;div&gt;loadbalancer ip&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                <mxCell id="14" value="platform NetworkPolicy:&#10;ingress from midi on 8080 only" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
                     <mxGeometry x="360" y="220" width="120" height="60" as="geometry"/>
                 </mxCell>
-                <mxCell id="18" value="The data layer handles CRUD requests to the database. Ingress and Metallb set an endpoint that routes requests to the container.&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;E.g. some REST client makes a request to create a midi device -&amp;gt; endpoint routes request to CRUD api which applies the change to the database deployed in the db layer&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;" vertex="1" parent="1">
+                <mxCell id="18" value="The data layer handles CRUD requests to the database. It is internal: a ClusterIP Service, and the platform&#x27;s NetworkPolicy admits only the midi layer on 8080.&#10;&#10;E.g. the chat layer asks midi to change an effect -&gt; midi reads and updates device details through this CRUD api -&gt; which applies the change to the database in the db layer.&#10;&#10;Deployed from nineteenseventytwo-platform apps/eightbitsaxlounge (ADR-0012)." style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;" vertex="1" parent="1">
                     <mxGeometry x="40" y="10" width="680" height="90" as="geometry"/>
                 </mxCell>
             </root>
