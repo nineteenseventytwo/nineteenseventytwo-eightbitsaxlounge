@@ -1,5 +1,16 @@
 # Changelog
 
+## [7.0.6] - 2026-10-28
+
+### Security
+- pip is removed from the image after the install. The base image's pip
+  vendors certifi 2026.6.17, which bundles emSign root CAs whose
+  intermediate keys were compromised (GHSA-6q48-6c7w-9gw2, critical). The
+  service never runs pip, so removing it also removes the bundle. pip
+  26.2.2 has the fixed certifi but is not yet two weeks old.
+- First published release with `aiohttp` 3.14.4. 7.0.5 failed the release
+  scan on the certifi finding above and was never pushed.
+
 ## [7.0.5] - 2026-10-28
 
 ### Security

@@ -5,7 +5,10 @@ FROM python:3.14-slim@sha256:a2b82f3c48559aa0a8446d9af49826b6e2b2016f4cd2afabfe6
 WORKDIR /app
 
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# pip is only needed to build the image. The base image's pip vendors
+# certifi 2026.6.17 (GHSA-6q48-6c7w-9gw2), which blocked the 7.0.5 release.
+RUN pip install --no-cache-dir -r requirements.txt \
+    && pip uninstall -y pip
 
 COPY src/ ./src/
 
