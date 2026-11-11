@@ -2,7 +2,15 @@
 #
 # Pinned to 3.5 plus a digest, not `latest` (CKV_DOCKER_7) — Dependabot
 # (.github/dependabot.yml, docker ecosystem) moves this forward deliberately.
-FROM couchdb:3.5@sha256:3611ce43bd32fe2368997fd41ec6e7270ec8d84aa5fc13c9828e5b15fd6bafe8
+FROM couchdb:3.5@sha256:907eab5b7e55ab7cfd241d39b90b2a335ea40bef82acee5a37388c08bf201dda
+
+# apt-get upgrade: the base ships apt and zlib1g, and Debian's fixes for
+# them (CVE-2026-109518, CVE-2026-85091) were in the Debian security archive before the
+# upstream image was rebuilt. Release builds run on fresh runners with no
+# layer cache, so every release picks up whatever Debian has fixed since.
+RUN apt-get update \
+    && apt-get upgrade -y \
+    && rm -rf /var/lib/apt/lists/*
 
 # Expose the default CouchDB port
 EXPOSE 5984
