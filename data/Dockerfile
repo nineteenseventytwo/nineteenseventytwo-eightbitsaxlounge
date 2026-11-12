@@ -9,7 +9,7 @@ RUN go build -o api
 # image this Dockerfile produces today is not the image it produces next
 # month, and Dependabot (docker ecosystem, .github/dependabot.yml) is what
 # now moves this pin forward deliberately instead of silently.
-FROM alpine:3.24@sha256:294b683cb724975bec92580e1e685676bd4b50bda910ddb8c51d4cabeaec77e6
+FROM alpine:3.24@sha256:f59abe656b692d901e184be3445e084786602108599d2a51d229c0f5a48c71bf
 RUN addgroup -g 1000 app && adduser -D -u 1000 -G app app
 WORKDIR /app
 COPY --from=builder /app/api .

@@ -1,12 +1,12 @@
 # nats-cli to be used for jetstream management in the entrypoint script.
 # Builder stage only — never runs, so pinning here is about reproducible
 # builds, not runtime hardening.
-FROM natsio/nats-box:0.20.0@sha256:d2f04223f40e016f77922a8115d34b0cd5fad2ec10b19b39316ae92d07f3d295 AS natscli
+FROM natsio/nats-box:0.20.2@sha256:5162fca0f56ebe6f78e612e1ded143ce978e088393476033020e6251358dba6f AS natscli
 
 # state image. Pinned past the floating `2-alpine` tag to the version it
 # resolves to today (CKV_DOCKER_7) — confirmed via `nats-server -v` before
 # pinning, so this is not a guess.
-FROM nats:2.15.0-alpine@sha256:ac8f88a6494bffc2c2a5289a0ca61cb28a9145c11ba5677cf24265d07f46d8d4
+FROM nats:2.15.2-alpine@sha256:afae2fdbe2e326c65e1246cb83b9d05d319188734f3bd577ac8072daae78a10f
 
 # CKV_DOCKER_3. Unlike db's couchdb, this base ships no dedicated user at
 # all — confirmed live: default id is uid=0(root), and neither /etc/passwd
