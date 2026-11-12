@@ -28,7 +28,7 @@ jobs:
     # mutable tag keeps serving old layers after a promote, indefinitely.
     # See nineteenseventytwo-platform#186.
     container:
-      image: ghcr.io/nineteenseventytwo/ansible-runner:1.2.0
+      image: ghcr.io/nineteenseventytwo/ansible-runner:1.4.0
     env:
       RUNNER_LOCAL: "1"
     defaults:
