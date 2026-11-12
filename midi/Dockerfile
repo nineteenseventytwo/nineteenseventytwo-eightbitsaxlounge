@@ -4,13 +4,12 @@
 # (CVE-2026-88092, CVE-2026-70188; fixed in 10.0.13). Dependabot's docker
 # ecosystem moves these forward from here, deliberately.
 #
-# 10.0.13 is under this estate's two-week rule (built 2026-10-21), taken
-# anyway: the alternative is knowingly running two critical CVEs in a
-# network-facing service. 10.0.14 (2026-10-26) was newer still; the older fix
-# is the smaller bet.
+# 10.0.14 (released 2026-10-25) fixes the Brotli decoder advisory
+# GHSA-p3jp-9v83-76w9 in 10.0.13. 10.0.15 (2026-11-10) is under the
+# two-week rule.
 #
-# Build stage: SDK 10.0.402, the one that ships runtime 10.0.13.
-FROM mcr.microsoft.com/dotnet/sdk:10.0.402@sha256:747cbade5bfd918a175ac32f8f1d931edec2c7d0d5397a3de72eaef1ac1f66d2 AS build
+# Build stage: SDK 10.0.403, the one that ships runtime 10.0.14.
+FROM mcr.microsoft.com/dotnet/sdk:10.0.403@sha256:212fe4cb74627d5adf9817a4088906ae3edff1bd853bb27565d4b46731efe61e AS build
 WORKDIR /src
 
 # Copy solution and project files
@@ -31,7 +30,14 @@ WORKDIR /src/NineteenSeventyTwo.EightBitSaxLounge.Midi/NineteenSeventyTwo.EightB
 RUN dotnet publish -c Release -o /app/publish --no-restore
 
 # Runtime stage
-FROM mcr.microsoft.com/dotnet/aspnet:10.0.13@sha256:8af87eba5e7cdafb1514d7388be287365da97c132509e84dfe252ffd552398ca
+FROM mcr.microsoft.com/dotnet/aspnet:10.0.14@sha256:1a48394b6f29d3a32c79d9edecd4abda0ecbe8776d567dbfc4590ed6979c740c
+
+# apt-get upgrade: the Ubuntu base ships apt without noble-security's fix
+# (CVE-2026-109518). Release builds have no layer cache, so every release
+# picks up what Ubuntu has fixed since the base was built.
+RUN apt-get update \
+    && apt-get upgrade -y \
+    && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY --from=build /app/publish .
 

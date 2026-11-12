@@ -1,12 +1,17 @@
 # nats-cli to be used for jetstream management in the entrypoint script.
 # Builder stage only — never runs, so pinning here is about reproducible
 # builds, not runtime hardening.
-FROM natsio/nats-box:0.20.0@sha256:d2f04223f40e016f77922a8115d34b0cd5fad2ec10b19b39316ae92d07f3d295 AS natscli
+FROM natsio/nats-box:0.20.1@sha256:dd57687c32199867bfc42823e935174f37754a4281de957d6717469948b5b18b AS natscli
 
 # state image. Pinned past the floating `2-alpine` tag to the version it
 # resolves to today (CKV_DOCKER_7) — confirmed via `nats-server -v` before
 # pinning, so this is not a guess.
-FROM nats:2.15.0-alpine@sha256:ac8f88a6494bffc2c2a5289a0ca61cb28a9145c11ba5677cf24265d07f46d8d4
+FROM nats:2.15.2-alpine@sha256:afae2fdbe2e326c65e1246cb83b9d05d319188734f3bd577ac8072daae78a10f
+
+# apk upgrade: Alpine's zlib fix (CVE-2026-85091) was in the repository
+# before this base was rebuilt with it. Release builds have no layer cache,
+# so every release picks up whatever Alpine has fixed since.
+RUN apk upgrade --no-cache
 
 # CKV_DOCKER_3. Unlike db's couchdb, this base ships no dedicated user at
 # all — confirmed live: default id is uid=0(root), and neither /etc/passwd
