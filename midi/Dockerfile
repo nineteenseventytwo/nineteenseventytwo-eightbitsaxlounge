@@ -5,11 +5,12 @@
 # ecosystem moves these forward from here, deliberately.
 #
 # 10.0.14 (released 2026-10-25) fixes the Brotli decoder advisory
-# GHSA-p3jp-9v83-76w9 in 10.0.13. 10.0.15 (2026-11-10) is under the
-# two-week rule.
+# GHSA-p3jp-9v83-76w9 in 10.0.13. 10.0.15 (2026-11-10) fixes three
+# ASP.NET Core highs (CVE-2026-114146, -114147, -114149), so it is taken
+# inside the two-week rule as a security fix.
 #
-# Build stage: SDK 10.0.403, the one that ships runtime 10.0.14.
-FROM mcr.microsoft.com/dotnet/sdk:10.0.403@sha256:212fe4cb74627d5adf9817a4088906ae3edff1bd853bb27565d4b46731efe61e AS build
+# Build stage: SDK 10.0.404, the one that ships runtime 10.0.15.
+FROM mcr.microsoft.com/dotnet/sdk:10.0.404@sha256:fe0fd4e93bd2fbb47c883b7a6369e5c8d3db8bf01cdc5981f6ee35fbdf3ff4fb AS build
 WORKDIR /src
 
 # Copy solution and project files
@@ -30,7 +31,7 @@ WORKDIR /src/NineteenSeventyTwo.EightBitSaxLounge.Midi/NineteenSeventyTwo.EightB
 RUN dotnet publish -c Release -o /app/publish --no-restore
 
 # Runtime stage
-FROM mcr.microsoft.com/dotnet/aspnet:10.0.14@sha256:1a48394b6f29d3a32c79d9edecd4abda0ecbe8776d567dbfc4590ed6979c740c
+FROM mcr.microsoft.com/dotnet/aspnet:10.0.15@sha256:bfd912c83295ce66d4b706ebb8541b9f14259b0e76fbb88b2751f58ce2399d2e
 
 # apt-get upgrade: the Ubuntu base ships apt without noble-security's fix
 # (CVE-2026-109518). Release builds have no layer cache, so every release
