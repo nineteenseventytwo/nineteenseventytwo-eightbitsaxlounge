@@ -1,7 +1,7 @@
 # nats-cli to be used for jetstream management in the entrypoint script.
 # Builder stage only — never runs, so pinning here is about reproducible
 # builds, not runtime hardening.
-FROM natsio/nats-box:0.20.1@sha256:dd57687c32199867bfc42823e935174f37754a4281de957d6717469948b5b18b AS natscli
+FROM natsio/nats-box:0.20.2@sha256:5162fca0f56ebe6f78e612e1ded143ce978e088393476033020e6251358dba6f AS natscli
 
 # state image. Pinned past the floating `2-alpine` tag to the version it
 # resolves to today (CKV_DOCKER_7) — confirmed via `nats-server -v` before

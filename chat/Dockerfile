@@ -1,6 +1,6 @@
 # Pinned by digest (CKV_DOCKER_7), like the other services. 3.14-slim was
 # 3.14.8 when pinned; Dependabot's docker ecosystem moves it forward.
-FROM python:3.14-slim@sha256:9aaa474097d094040649f2162a627c0049b408f52138d980916788d80f04802f
+FROM python:3.15-slim@sha256:65a65fc7b30b06cb6df4930fd4650697cb23f4c2698ab81fc87e4b031bc36928
 
 # apt-get upgrade: the base ships apt and zlib1g, and Debian's fixes for
 # them (CVE-2026-109518, CVE-2026-85091) were in trixie-security before the
