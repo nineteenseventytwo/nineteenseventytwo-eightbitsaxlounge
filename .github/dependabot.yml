@@ -9,30 +9,35 @@ updates:
   - package-ecosystem: github-actions
     directory: "/"
     schedule: {interval: monthly}
+    cooldown: {default-days: 14}  # ADR-0022: two-week rule
     groups:
       actions: {patterns: ["*"]}
 
   - package-ecosystem: pip
     directory: "/chat"
     schedule: {interval: monthly}
+    cooldown: {default-days: 14}  # ADR-0022: two-week rule
     groups:
       chat: {patterns: ["*"]}
 
   - package-ecosystem: gomod
     directory: "/data/go"
     schedule: {interval: monthly}
+    cooldown: {default-days: 14}  # ADR-0022: two-week rule
     groups:
       data: {patterns: ["*"]}
 
   - package-ecosystem: npm
     directory: "/overlay"
     schedule: {interval: monthly}
+    cooldown: {default-days: 14}  # ADR-0022: two-week rule
     groups:
       overlay: {patterns: ["*"]}
 
   - package-ecosystem: nuget
     directory: "/midi"
     schedule: {interval: monthly}
+    cooldown: {default-days: 14}  # ADR-0022: two-week rule
     groups:
       midi: {patterns: ["*"]}
 
@@ -47,5 +52,6 @@ updates:
       - "/overlay"
       - "/state"
     schedule: {interval: monthly}
+    cooldown: {default-days: 14}  # ADR-0022: two-week rule
     groups:
       base-images: {patterns: ["*"]}
